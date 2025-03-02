@@ -1,0 +1,417 @@
+package uz.foursquare.retailapp.ui.goods
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
+import uz.foursquare.retailapp.R
+import uz.foursquare.retailapp.navigation.home.AddProductScreens
+import uz.foursquare.retailapp.ui.theme.AppTheme
+import uz.foursquare.retailapp.ui.theme.Nunito
+import uz.foursquare.retailapp.ui.theme.RetailAppTheme
+import uz.foursquare.retailapp.utils.Screen
+import uz.foursquare.retailapp.utils.convertToPriceFormat
+
+val goods = listOf(
+    GoodType(
+        id = 1,
+        name = "Tovar nomi 1",
+        count = 120000,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 120000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "kg"
+    ), GoodType(
+        id = 2,
+        name = "Tovar nomi 2",
+        count = 400,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 1300000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "metr"
+    ), GoodType(
+        id = 3,
+        name = "Ushbu tovar nomi uzun, ekranga sig'maslik ehtimoli bor",
+        count = 5,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 12000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "dona"
+    ), GoodType(
+        id = 1,
+        name = "Tovar nomi 1",
+        count = 120000,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 120000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "kg"
+    ), GoodType(
+        id = 2,
+        name = "Tovar nomi 2",
+        count = 400,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 1300000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "metr"
+    ), GoodType(
+        id = 3,
+        name = "Ushbu tovar nomi uzun, ekranga sig'maslik ehtimoli bor",
+        count = 5,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 12000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "dona"
+    ), GoodType(
+        id = 1,
+        name = "Tovar nomi 1",
+        count = 120000,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 120000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "kg"
+    ), GoodType(
+        id = 2,
+        name = "Tovar nomi 2",
+        count = 400,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 1300000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "metr"
+    ), GoodType(
+        id = 3,
+        name = "Ushbu tovar nomi uzun, ekranga sig'maslik ehtimoli bor",
+        count = 5,
+        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        price = 12000,
+        barcode = "42154789955500",
+        isActive = true,
+        isAvailable = true,
+        uniteType = "dona"
+    )
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GoodsScreen(navController: NavHostController) {
+    val scrollBehavior =
+        TopAppBarDefaults.enterAlwaysScrollBehavior(state = rememberTopAppBarState())
+    RetailAppTheme {
+        Scaffold(
+            topBar = {
+                GoodsToolbar(
+                    title = "Goods", modifier = Modifier, scrollBehavior = scrollBehavior
+                )
+            },
+            floatingActionButton = {
+                AddGoodButton(navController)
+            },
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            containerColor = AppTheme.appColor.neutralLightLight
+        ) { innerPadding ->
+            RetailAppTheme {
+                Column(
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                ) {
+                    SearchBar()
+                    Spacer(modifier = Modifier.height(4.dp))
+                    GoodsCard()
+                }
+            }
+        }
+    }
+
+}
+
+@Composable
+fun GoodsCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        )
+    ) {
+        ChipsGroup()
+
+        HorizontalDivider()
+
+        LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
+            items(goods) { good ->
+                GoodItem(good)
+            }
+        }
+    }
+}
+
+@Composable
+fun GoodItem(goodItem: GoodType) {
+    Row {
+        AsyncImage(
+            model = goodItem.image,
+            contentDescription = "Good image",
+            placeholder = painterResource(id = R.drawable.image_placeholder),
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(100.dp)
+                .padding(16.dp)
+                .clip(RoundedCornerShape(16.dp))
+        )
+
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+
+            Text(
+                text = goodItem.name,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = AppTheme.typography.headlineH3,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            Text(
+                text = goodItem.price.convertToPriceFormat(),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = AppTheme.typography.headlineH4,
+                color = AppTheme.color.primary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+
+            Text(
+                text = "${goodItem.count} ${goodItem.uniteType} / ${goodItem.barcode}",
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = AppTheme.typography.bodyM
+            )
+
+        }
+    }
+
+    HorizontalDivider()
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchBar() {
+    var searchValue by remember { mutableStateOf("") }
+    val interactionSource = remember { MutableInteractionSource() }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))  // Rounded corners for the entire search bar
+            .background(Color.White)      // Background color for the entire search bar
+            .padding(8.dp), verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = "Search",
+            tint = Color(0xFF2F3036)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        BasicTextField(
+            value = searchValue,
+            onValueChange = { newText -> searchValue = newText },
+            modifier = Modifier.weight(1f),
+            enabled = true,
+            singleLine = true,
+        ) { innerTextField ->
+            TextFieldDefaults.DecorationBox(
+                value = searchValue,
+                innerTextField = innerTextField,
+                singleLine = true,
+                enabled = true,
+                container = { SelectionContainer {} },
+                placeholder = { Text(text = "Qidiruv", fontFamily = Nunito) },
+                contentPadding = PaddingValues(4.dp),
+                interactionSource = interactionSource,
+                visualTransformation = VisualTransformation.None,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    focusedIndicatorColor = Color.White,
+                    unfocusedIndicatorColor = Color.White,
+                    disabledIndicatorColor = Color.White,
+                    cursorColor = Color.Red
+                )
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+
+        IconButton(
+            onClick = { /* Handle clear button click */ },
+            modifier = Modifier
+                .size(36.dp)
+                .padding(end = 8.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.barcode_scanner),
+                contentDescription = "Clear",
+                tint = Color(0xFF2F3036)
+            )
+        }
+    }
+}
+
+@Composable
+fun ChipsGroup() {
+    val chips = listOf(
+        "Barchasi (2 300)", "Aktiv (1 100)", "Noaktiv (30)", "Kam qolgan (250)", "Qolmagan (100)"
+    )
+    var selectedChip by remember { mutableStateOf(chips.first()) }
+    val scrollState = rememberScrollState()
+
+    Row(
+        modifier = Modifier
+            .padding(top = 8.dp, bottom = 0.dp, start = 8.dp)
+            .horizontalScroll(scrollState)
+    ) {
+        chips.forEach { chip ->
+            FilterChip(
+                selected = selectedChip == chip,
+                border = BorderStroke(0.dp, Color.Transparent),
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Color(0xFFEAF2FF),
+                    labelColor = Color(0xFF006FFD),
+                    selectedContainerColor = Color(0xFF006FFD),
+                    selectedLabelColor = Color.White
+                ),
+                onClick = { selectedChip = chip },
+                label = { Text(text = chip) }, // Use `text = chip` for clarity
+                leadingIcon = {
+                    if (selectedChip == chip) {
+                        Icon(
+                            imageVector = Icons.Filled.Done,
+                            contentDescription = "Done icon",
+                            modifier = Modifier.size(FilterChipDefaults.IconSize),
+                            tint = Color.White
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GoodsToolbar(
+    title: String, modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavior
+) {
+    TopAppBar(title = { Text(text = title, style = AppTheme.typography.headlineH3) },
+        scrollBehavior = scrollBehavior,
+        modifier = modifier.clip(RoundedCornerShape(bottomEnd = 16.dp, bottomStart = 16.dp)),
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.White
+        ),
+        actions = {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .size(30.dp)
+            )
+        })
+}
+
+@Composable
+fun AddGoodButton(navController: NavHostController, modifier: Modifier = Modifier) {
+    FloatingActionButton(onClick = {
+        navController.navigate(AddProductScreens.AddProduct.route)
+    }, containerColor = AppTheme.color.primary) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 8.dp)
+            )
+
+            Text(text = "Tovar qo'shish", color = Color.White, modifier = Modifier.padding(8.dp))
+        }
+
+    }
+}
+
+
+@Preview
+@Composable
+fun GoodsScreenPreview() {
+    GoodsScreen(rememberNavController())
+}
