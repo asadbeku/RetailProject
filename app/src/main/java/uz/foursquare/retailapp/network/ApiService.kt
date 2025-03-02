@@ -1,7 +1,9 @@
 package uz.foursquare.retailapp.network
 
-import uz.foursquare.retailapp.network.auth_response.AuthLoginResponse
+import javax.inject.Inject
+import javax.inject.Singleton
 
-interface ApiService {
-    suspend fun login(phoneNumber: String, password: String): AuthLoginResponse
-}
+@Singleton
+class ApiService @Inject constructor(
+    val baseUrl: String
+)

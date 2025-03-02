@@ -1,6 +1,9 @@
 package uz.foursquare.retailapp.ui.auth.login.type
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class LoginRequest(
-    val phoneNumber: String,
+    val phonenumber: String,
     val password: String
 )

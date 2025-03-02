@@ -88,6 +88,11 @@ dependencies {
     implementation(libs.ktor.client.json)
     implementation(libs.ktor.client.serialization)
     implementation(libs.ktor.client.logging)
+    implementation("io.ktor:ktor-client-cio:3.1.0")
+    implementation("io.ktor:ktor-client-gson:3.1.0")
+    implementation("io.ktor:ktor-client-content-negotiation:3.1.0")
+    implementation("io.ktor:ktor-serialization-gson:3.1.0")
 
     implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
 }

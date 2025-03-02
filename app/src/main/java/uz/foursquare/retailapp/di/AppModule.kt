@@ -6,10 +6,11 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import uz.foursquare.retailapp.network.ApiService
-import uz.foursquare.retailapp.network.AuthApiImpl
-import uz.foursquare.retailapp.network.auth_response.AuthRepositoryImpl
 import uz.foursquare.retailapp.ui.auth.login.view_model.LoginRepository
 import javax.inject.Singleton
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.serialization.gson.*
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -17,13 +18,26 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthApi(client: HttpClient): ApiService {
-        return AuthApiImpl(client)
+    fun provideHttpClient(): HttpClient {
+        return HttpClient(CIO) { // ✅ Use CIO engine
+            install(ContentNegotiation) {
+                gson { // ✅ Use Gson instead of json(Json { ... })
+                    setPrettyPrinting() // Optional: Formats JSON output
+                    disableHtmlEscaping() // Optional: Prevents escaping special characters
+                }
+            }
+        }
     }
 
     @Provides
     @Singleton
-    fun provideAuthRepository(api: ApiService): LoginRepository {
-        return AuthRepositoryImpl(api)
+    fun provideApiService(): ApiService {
+        return ApiService("https://dev.back.kipavtomatika.uz") // Replace with actual URL
+    }
+
+    @Provides
+    @Singleton
+    fun provideLoginRepository(client: HttpClient, apiService: ApiService): LoginRepository {
+        return LoginRepository(client, apiService)
     }
 }
