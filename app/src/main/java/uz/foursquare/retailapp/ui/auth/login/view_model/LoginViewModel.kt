@@ -5,18 +5,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import uz.foursquare.retailapp.navigation.Graph
 import uz.foursquare.retailapp.navigation.auth.AuthScreen
 import uz.foursquare.retailapp.ui.auth.login.type.LoginResponse
+import uz.foursquare.retailapp.ui.auth.login.type.LoginUiState
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val loginRepository: LoginRepository
 ) : ViewModel() {
+
+    private val _errorFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val errorFlow = _errorFlow.asSharedFlow()
 
     private val _phoneNumber = MutableStateFlow("")
     val phoneNumber: StateFlow<String> = _phoneNumber
@@ -49,23 +55,26 @@ class LoginViewModel @Inject constructor(
             Log.d("LoginViewModel", "phoneNumber: ${_phoneNumber.value}, password: ${_password.value}")
             val response = loginRepository.login(_phoneNumber.value, _password.value)
             Log.d("LoginViewModel", "response: $response")
+
             if (response.isSuccess) {
-                _uiState.value = _uiState.value.copy(isLoading = false, errorMessage = null)
+                _uiState.value = _uiState.value.copy(isLoading = false)
                 navController.navigate(Graph.MAIN) {
                     popUpTo(AuthScreen.Login.route) { inclusive = true }
                 }
             } else {
-                _uiState.value = _uiState.value.copy(
-                    isLoading = false,
-                    errorMessage = response.exceptionOrNull()?.message
-                )
+                val exceptionMessage = response.exceptionOrNull()?.message.orEmpty()
+
+                val errorMessage = when {
+                    exceptionMessage.contains("400") -> "Telefon raqami yoki parol noto‘g‘ri."
+                    exceptionMessage.contains("401") -> "Login yoki parol xato, tekshirib qaytadan kiring!"
+                    exceptionMessage.contains("403") -> "Ruxsat berilmadi."
+                    exceptionMessage.contains("500") -> "Server xatosi. Keyinroq qayta urinib ko‘ring."
+                    else -> "An unexpected error occurred."
+                }
+
+                _uiState.value = _uiState.value.copy(isLoading = false)
+                _errorFlow.emit(errorMessage)
             }
         }
     }
 }
-
-data class LoginUiState(
-    val isLoginEnabled: Boolean = false,
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null
-)
