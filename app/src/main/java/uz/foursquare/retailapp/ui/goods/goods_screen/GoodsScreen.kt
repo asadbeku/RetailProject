@@ -1,4 +1,4 @@
-package uz.foursquare.retailapp.ui.goods
+package uz.foursquare.retailapp.ui.goods.goods_screen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -33,7 +33,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
@@ -42,6 +41,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,114 +57,23 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
+import kotlinx.coroutines.flow.collect
 import uz.foursquare.retailapp.R
 import uz.foursquare.retailapp.navigation.home.AddProductScreens
+import uz.foursquare.retailapp.ui.goods.goods_screen.types.GoodType
+import uz.foursquare.retailapp.ui.goods.goods_screen.view_model.GoodsViewModel
 import uz.foursquare.retailapp.ui.theme.AppTheme
 import uz.foursquare.retailapp.ui.theme.Nunito
 import uz.foursquare.retailapp.ui.theme.RetailAppTheme
-import uz.foursquare.retailapp.utils.Screen
 import uz.foursquare.retailapp.utils.convertToPriceFormat
-
-val goods = listOf(
-    GoodType(
-        id = 1,
-        name = "Tovar nomi 1",
-        count = 120000,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 120000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "kg"
-    ), GoodType(
-        id = 2,
-        name = "Tovar nomi 2",
-        count = 400,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 1300000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "metr"
-    ), GoodType(
-        id = 3,
-        name = "Ushbu tovar nomi uzun, ekranga sig'maslik ehtimoli bor",
-        count = 5,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 12000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "dona"
-    ), GoodType(
-        id = 1,
-        name = "Tovar nomi 1",
-        count = 120000,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 120000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "kg"
-    ), GoodType(
-        id = 2,
-        name = "Tovar nomi 2",
-        count = 400,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 1300000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "metr"
-    ), GoodType(
-        id = 3,
-        name = "Ushbu tovar nomi uzun, ekranga sig'maslik ehtimoli bor",
-        count = 5,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 12000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "dona"
-    ), GoodType(
-        id = 1,
-        name = "Tovar nomi 1",
-        count = 120000,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 120000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "kg"
-    ), GoodType(
-        id = 2,
-        name = "Tovar nomi 2",
-        count = 400,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 1300000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "metr"
-    ), GoodType(
-        id = 3,
-        name = "Ushbu tovar nomi uzun, ekranga sig'maslik ehtimoli bor",
-        count = 5,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 12000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "dona"
-    )
-)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GoodsScreen(navController: NavHostController) {
+fun GoodsScreen(navController: NavHostController, viewModel: GoodsViewModel = hiltViewModel()) {
     val scrollBehavior =
         TopAppBarDefaults.enterAlwaysScrollBehavior(state = rememberTopAppBarState())
     RetailAppTheme {
@@ -189,24 +98,26 @@ fun GoodsScreen(navController: NavHostController) {
                 ) {
                     SearchBar()
                     Spacer(modifier = Modifier.height(4.dp))
-                    GoodsCard()
+                    GoodsCard(viewModel)
                 }
             }
         }
     }
-
 }
 
 @Composable
-fun GoodsCard() {
+fun GoodsCard(viewModel: GoodsViewModel) {
     Card(
         modifier = Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(
             containerColor = Color.White
         )
     ) {
+        val goods = viewModel.goods.collectAsState().value
+
         ChipsGroup()
 
         HorizontalDivider()
+
 
         LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
             items(goods) { good ->
@@ -220,7 +131,7 @@ fun GoodsCard() {
 fun GoodItem(goodItem: GoodType) {
     Row {
         AsyncImage(
-            model = goodItem.image,
+            model = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
             contentDescription = "Good image",
             placeholder = painterResource(id = R.drawable.image_placeholder),
             contentScale = ContentScale.Crop,
@@ -243,7 +154,7 @@ fun GoodItem(goodItem: GoodType) {
             )
 
             Text(
-                text = goodItem.price.convertToPriceFormat(),
+                text = goodItem.salePrice.convertToPriceFormat(),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = AppTheme.typography.headlineH4,
@@ -260,7 +171,6 @@ fun GoodItem(goodItem: GoodType) {
 
         }
     }
-
     HorizontalDivider()
 }
 
@@ -373,7 +283,8 @@ fun ChipsGroup() {
 fun GoodsToolbar(
     title: String, modifier: Modifier = Modifier, scrollBehavior: TopAppBarScrollBehavior
 ) {
-    TopAppBar(title = { Text(text = title, style = AppTheme.typography.headlineH3) },
+    TopAppBar(
+        title = { Text(text = title, style = AppTheme.typography.headlineH3) },
         scrollBehavior = scrollBehavior,
         modifier = modifier.clip(RoundedCornerShape(bottomEnd = 16.dp, bottomStart = 16.dp)),
         colors = TopAppBarDefaults.topAppBarColors(

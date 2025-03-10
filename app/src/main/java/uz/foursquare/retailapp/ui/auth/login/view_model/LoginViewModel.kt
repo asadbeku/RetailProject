@@ -14,11 +14,13 @@ import uz.foursquare.retailapp.navigation.Graph
 import uz.foursquare.retailapp.navigation.auth.AuthScreen
 import uz.foursquare.retailapp.ui.auth.login.type.LoginResponse
 import uz.foursquare.retailapp.ui.auth.login.type.LoginUiState
+import uz.foursquare.retailapp.utils.SharedPrefsManager
 import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val loginRepository: LoginRepository
+    private val loginRepository: LoginRepository,
+    private val sharedPrefs: SharedPrefsManager
 ) : ViewModel() {
 
     private val _errorFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
@@ -52,12 +54,13 @@ class LoginViewModel @Inject constructor(
     fun login(navController: NavController) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
-            Log.d("LoginViewModel", "phoneNumber: ${_phoneNumber.value}, password: ${_password.value}")
             val response = loginRepository.login(_phoneNumber.value, _password.value)
-            Log.d("LoginViewModel", "response: $response")
 
             if (response.isSuccess) {
                 _uiState.value = _uiState.value.copy(isLoading = false)
+
+                sharedPrefs.saveToken(response.getOrThrow().token)
+
                 navController.navigate(Graph.MAIN) {
                     popUpTo(AuthScreen.Login.route) { inclusive = true }
                 }

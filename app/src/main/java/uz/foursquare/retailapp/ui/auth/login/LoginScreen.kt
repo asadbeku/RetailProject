@@ -95,12 +95,6 @@ fun LoginScreen(
     }
 }
 
-
-@Composable
-fun ShowError(message: String) {
-
-}
-
 @Composable
 fun LoginCard(viewModel: LoginViewModel) {
     Card(

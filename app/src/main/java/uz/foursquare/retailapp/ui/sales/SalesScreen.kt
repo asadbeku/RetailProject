@@ -5,10 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
@@ -52,7 +49,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,9 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusEvent
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
@@ -82,8 +76,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import uz.foursquare.retailapp.R
-import uz.foursquare.retailapp.ui.goods.GoodType
-import uz.foursquare.retailapp.ui.goods.SearchBar
+import uz.foursquare.retailapp.ui.goods.goods_screen.types.GoodType
+import uz.foursquare.retailapp.ui.goods.goods_screen.SearchBar
 import uz.foursquare.retailapp.ui.theme.AppTheme
 import uz.foursquare.retailapp.ui.theme.RetailAppTheme
 import uz.foursquare.retailapp.utils.convertToPriceFormat
@@ -125,11 +119,11 @@ fun SalesCardScreen() {
 
 @Composable
 fun ProductsScreen() {
-    LazyColumn(modifier = Modifier) {
-        items(goods.size) {
-            ProductItem(goods[it])
-        }
-    }
+//    LazyColumn(modifier = Modifier) {
+//        items(goods.size) {
+//            ProductItem(goods[it])
+//        }
+//    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -153,7 +147,7 @@ fun ProductItem(goodItem: GoodType) {
                     .clickable { showBottomSheet = true }
             ) {
                 AsyncImage(
-                    model = goodItem.image,
+                    model = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
                     contentDescription = "Good image",
                     placeholder = painterResource(id = R.drawable.image_placeholder),
                     contentScale = ContentScale.Crop,
@@ -177,7 +171,7 @@ fun ProductItem(goodItem: GoodType) {
                     )
 
                     Text(
-                        text = goodItem.price.convertToPriceFormat(),
+                        text = goodItem.salePrice.convertToPriceFormat(),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = AppTheme.typography.headlineH5,
@@ -710,37 +704,3 @@ fun SingleChoiceSegmentedButton(modifier: Modifier = Modifier) {
 fun SalesScreenPreview() {
     SalesScreen(navController = rememberNavController())
 }
-
-val goods = listOf(
-    GoodType(
-        id = 1,
-        name = "Tovar nomi 1",
-        count = 120000,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 120000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "kg"
-    ), GoodType(
-        id = 2,
-        name = "Tovar nomi 2",
-        count = 400,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 1300000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "metr"
-    ), GoodType(
-        id = 3,
-        name = "Ushbu tovar nomi uzun, ekranga sig'maslik ehtimoli bor",
-        count = 5,
-        image = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-        price = 12000,
-        barcode = "42154789955500",
-        isActive = true,
-        isAvailable = true,
-        uniteType = "dona"
-    )
-)

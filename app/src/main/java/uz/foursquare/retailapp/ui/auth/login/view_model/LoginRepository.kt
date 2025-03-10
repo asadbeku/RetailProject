@@ -1,5 +1,6 @@
 package uz.foursquare.retailapp.ui.auth.login.view_model
 
+import android.util.Log
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
@@ -12,6 +13,7 @@ import io.ktor.http.isSuccess
 import uz.foursquare.retailapp.network.ApiService
 import uz.foursquare.retailapp.ui.auth.login.type.LoginRequest
 import uz.foursquare.retailapp.ui.auth.login.type.LoginResponse
+import uz.foursquare.retailapp.utils.SharedPrefsManager
 import javax.inject.Inject
 
 class LoginRepository @Inject constructor(

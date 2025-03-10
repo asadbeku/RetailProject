@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import uz.foursquare.retailapp.ui.goods.GoodsScreen
+import uz.foursquare.retailapp.ui.goods.goods_screen.GoodsScreen
 import uz.foursquare.retailapp.ui.home.HomeScreen
 import uz.foursquare.retailapp.ui.main.BottomBarScreen
 import uz.foursquare.retailapp.ui.menu.MenuScreen
