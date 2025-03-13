@@ -20,20 +20,22 @@ class GoodsRepository @Inject constructor(
     private val apiService: ApiService,
     private val sharedPrefs: SharedPrefsManager
 ) {
-    private val goodsUrl = "${apiService.baseUrl}/products"
-
-    suspend fun getGoods(): Result<Unit> {
-        return runCatching {
-            val response = client.get(goodsUrl) {
+    suspend fun getGoods(): Result<List<GoodType>> {
+        return try {
+            val response = client.get("${apiService.baseUrl}/products") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer ${sharedPrefs.getToken()}")
             }
 
             if (response.status.isSuccess()) {
-                response.body<GoodsTypeResponse>().toGoodTypeList()
+                Result.success(response.body<GoodsTypeResponse>().toGoodTypeList())
             } else {
-                throw Exception("Failed to fetch goods: ${response.status}")
+                Result.failure(Exception())
             }
+
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
+
 }
