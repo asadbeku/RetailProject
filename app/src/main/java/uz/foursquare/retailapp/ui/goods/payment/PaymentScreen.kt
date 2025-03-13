@@ -272,7 +272,7 @@ fun PaymentSumItem(paymentName: String, paymentSum: String) {
             )
 
             Text(
-                text = paymentSum.toLong().convertToPriceFormat(),
+                text = paymentSum.toDouble().convertToPriceFormat(),
                 style = AppTheme.typography.headlineH3,
                 modifier = Modifier
                     .weight(1f)
@@ -296,7 +296,8 @@ fun PaymentSumItem(paymentName: String, paymentSum: String) {
 fun PaymentToolbar(
     title: String, onNavigationIconClick: () -> Unit = {}
 ) {
-    CenterAlignedTopAppBar(title = {
+    CenterAlignedTopAppBar(
+        title = {
         Text(
             title,
             color = MaterialTheme.colorScheme.onSurface,

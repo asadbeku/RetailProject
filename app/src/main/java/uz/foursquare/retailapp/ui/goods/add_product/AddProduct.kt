@@ -118,8 +118,6 @@ fun AddProductScreen(innerPadding: PaddingValues, navController: NavHostControll
 
         item { PricesSection() }
 
-
-
         item { ProductFeatures(navController) }
     }
 

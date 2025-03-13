@@ -66,6 +66,7 @@ class LoginViewModel @Inject constructor(
                 }
             } else {
                 val exceptionMessage = response.exceptionOrNull()?.message.orEmpty()
+                Log.d("LoginViewModel", "login: $exceptionMessage")
 
                 val errorMessage = when {
                     exceptionMessage.contains("400") -> "Telefon raqami yoki parol noto‘g‘ri."

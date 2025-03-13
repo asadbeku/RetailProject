@@ -35,6 +35,7 @@ class LoginRepository @Inject constructor(
                 Result.failure(Exception("Login failed: ${response.status}, $errorBody"))
             }
         } catch (e: Exception) {
+            Log.e("LoginRepository", "Login failed", e)
             Result.failure(e)
         }
     }

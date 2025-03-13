@@ -4,10 +4,10 @@ data class GoodType(
     val id: String,
     val name: String,
     val count: Int,
-    val salePrice: Long,
-    val purchasePrice: Long,
-    val purchasePriceUSD: Long,
-    val salePriceUSD: Long,
+    val salePrice: Double,
+    val purchasePrice: Double,
+    val purchasePriceUSD: Double,
+    val salePriceUSD: Double,
     val uniteType: String,
     val barcode: String
 )

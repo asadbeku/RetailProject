@@ -157,7 +157,7 @@ fun TransactionItem(transaction: TransactionType) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = transaction.paymentSum.convertToPriceFormat(),
+                    text = transaction.paymentSum.toDouble().convertToPriceFormat(),
                     color = AppTheme.color.primary,
                     modifier = Modifier.weight(1f),
                     style = AppTheme.typography.headlineH3
