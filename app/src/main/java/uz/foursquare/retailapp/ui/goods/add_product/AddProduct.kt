@@ -23,16 +23,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Clear
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -46,13 +43,13 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -69,19 +66,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import kotlinx.coroutines.launch
 import uz.foursquare.retailapp.R
 import uz.foursquare.retailapp.navigation.home.AddProductScreens
-import uz.foursquare.retailapp.ui.home.HomeScreen
+import uz.foursquare.retailapp.ui.goods.add_product.view_model.AddProductViewModel
 import uz.foursquare.retailapp.ui.theme.AppTheme
 import uz.foursquare.retailapp.ui.theme.RetailAppTheme
-import uz.foursquare.retailapp.utils.Screen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddProduct(navController: NavHostController) {
+fun AddProduct(
+    navController: NavHostController,
+    viewModel: AddProductViewModel = hiltViewModel()
+) {
     var shouldShowBottomSheet by remember { mutableStateOf(false) }
     RetailAppTheme {
         Scaffold(
@@ -90,11 +89,12 @@ fun AddProduct(navController: NavHostController) {
                     title = "Add Product",
                     modifier = Modifier,
                     scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(),
-                    navController = navController
+                    navController = navController,
+                    viewModel
                 ) { shouldShowBottomSheet = true }
             }, containerColor = AppTheme.appColor.neutralLightLight
         ) { innerPadding ->
-            AddProductScreen(innerPadding = innerPadding, navController)
+            AddProductScreen(innerPadding = innerPadding, navController, viewModel)
             if (shouldShowBottomSheet) {
                 QuitBottomSheet(
                     navController = navController,
@@ -103,24 +103,27 @@ fun AddProduct(navController: NavHostController) {
                     shouldShowBottomSheet = false
                 }
             }
+
         }
     }
 }
 
 @Composable
-fun AddProductScreen(innerPadding: PaddingValues, navController: NavHostController) {
-
+fun AddProductScreen(
+    innerPadding: PaddingValues,
+    navController: NavHostController,
+    viewModel: AddProductViewModel
+) {
     LazyColumn(modifier = Modifier.padding(0.dp)) {
 
         item { AddProductImage(innerPadding) }
-        item { ProductCount() }
-        item { MainSection(navController) }
+        item { ProductCount(viewModel) }
+        item { MainSection(navController, viewModel) }
 
-        item { PricesSection() }
+        item { PricesSection(viewModel) }
 
         item { ProductFeatures(navController) }
     }
-
 
 }
 
@@ -131,10 +134,12 @@ fun AddProductToolbar(
     modifier: Modifier = Modifier,
     scrollBehavior: TopAppBarScrollBehavior,
     navController: NavHostController,
+    viewModel: AddProductViewModel,
     onBackClick: () -> Unit
 ) {
 
-    CenterAlignedTopAppBar(title = { Text(text = title, style = AppTheme.typography.headlineH3) },
+    CenterAlignedTopAppBar(
+        title = { Text(text = title, style = AppTheme.typography.headlineH3) },
         scrollBehavior = scrollBehavior,
         modifier = modifier.clip(RoundedCornerShape(bottomEnd = 16.dp, bottomStart = 16.dp)),
         colors = TopAppBarDefaults.topAppBarColors(
@@ -158,11 +163,17 @@ fun AddProductToolbar(
         actions = {
             Text(
                 text = "Qo'shish",
-                modifier = Modifier.padding(end = 8.dp),
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .clickable(
+                        onClick = { viewModel.addProduct() },  // Handle "Qo'shish" click
+                        indication = ripple(),
+                        interactionSource = remember { MutableInteractionSource() }
+                    ),
                 style = AppTheme.typography.headlineH4,
-                color = AppTheme.color.primary
-            )
-        })
+                color = AppTheme.color.primary)
+        }
+    )
 }
 
 // Remove the QuitBottomSheet function as it's not used correctly in this context
@@ -328,7 +339,7 @@ fun AddProductImage(innerPadding: PaddingValues) {
 }
 
 @Composable
-fun MainSection(navController: NavHostController) {
+fun MainSection(navController: NavHostController, viewModel: AddProductViewModel) {
     Card(
         modifier = Modifier
             .padding()
@@ -338,11 +349,11 @@ fun MainSection(navController: NavHostController) {
             containerColor = Color.White
         )
     ) {
-        var productName by remember { mutableStateOf("") }
-        var barcode by remember { mutableStateOf("") }
-        var article by remember { mutableStateOf("") }
-        var productCountType by remember { mutableStateOf("") }
-        var isVariate by remember { mutableStateOf(false) }
+        val productName by viewModel.nameState.collectAsState()
+        val barcode by viewModel.barcodeState.collectAsState()
+        val article by viewModel.skuState.collectAsState()
+        val productCountType by remember { mutableStateOf("") }
+        val isVariate by remember { mutableStateOf(false) }
         Column(modifier = Modifier.padding(16.dp)) {
 
             Text(
@@ -357,8 +368,9 @@ fun MainSection(navController: NavHostController) {
                 modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
             )
 
-            OutlinedTextField(value = productName,
-                onValueChange = {},
+            OutlinedTextField(
+                value = productName,
+                onValueChange = { viewModel.setName(it) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp), // Set corner radius to 16.dp
                 colors = TextFieldDefaults.colors(
@@ -371,8 +383,9 @@ fun MainSection(navController: NavHostController) {
                 ),
                 label = { Text("Tovar nomi") })
 
-            OutlinedTextField(value = article,
-                onValueChange = {},
+            OutlinedTextField(
+                value = article,
+                onValueChange = { viewModel.setSku(it) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp), // Set corner radius to 16.dp
                 colors = TextFieldDefaults.colors(
@@ -398,8 +411,9 @@ fun MainSection(navController: NavHostController) {
                 }
             )
 
-            OutlinedTextField(value = barcode,
-                onValueChange = {},
+            OutlinedTextField(
+                value = barcode,
+                onValueChange = { viewModel.setBarcode(it) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp), // Set corner radius to 16.dp
                 colors = TextFieldDefaults.colors(
@@ -523,18 +537,19 @@ fun MainSection(navController: NavHostController) {
 }
 
 @Composable
-fun PricesSection() {
+fun PricesSection(viewModel: AddProductViewModel) {
 
-    var receiptPrice by remember { mutableStateOf("") }
-    var salePrice by remember { mutableStateOf("") }
-    var markupPresent by remember { mutableStateOf("") }
-    var wholesalePrice by remember { mutableStateOf("") }
-    var isFreePrice by remember { mutableStateOf(false) }
-    var productCount by remember { mutableIntStateOf(0) }
-    var brandName by remember { mutableStateOf("") }
-    var supplierName by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    val purchasePrice by viewModel.purchasePriceState.collectAsState()
+    val sellingPrice by viewModel.salePriceState.collectAsState()
+    val markupPercentage by remember { mutableStateOf("") }  // Renamed from markupPresent
+    val bulkPrice by viewModel.discountPriceState.collectAsState()
+    var isFlexiblePrice by remember { mutableStateOf(false) }  // Renamed from isFreePrice
+    var productQuantity by remember { mutableIntStateOf(0) }   // Renamed from productCount
+    var brand by remember { mutableStateOf("") }          // Renamed from brandName
+    var supplier by remember { mutableStateOf("") }       // Renamed from supplierName
+    var productCategory by remember { mutableStateOf("") } // Renamed from category
+    var productDescription by remember { mutableStateOf("") } // Renamed from description
+
 
 
     Card(
@@ -558,8 +573,9 @@ fun PricesSection() {
                 modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
             )
 
-            OutlinedTextField(value = receiptPrice,
-                onValueChange = {},
+            OutlinedTextField(
+                value = purchasePrice,
+                onValueChange = { viewModel.setPurchasePrice(it) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp), // Set corner radius to 16.dp
                 colors = TextFieldDefaults.colors(
@@ -572,8 +588,9 @@ fun PricesSection() {
                 ),
                 label = { Text("Kelish narxi (USD)") })
 
-            OutlinedTextField(value = receiptPrice,
-                onValueChange = {},
+            OutlinedTextField(
+                value = sellingPrice,
+                onValueChange = { viewModel.setSalePrice(it) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp), // Set corner radius to 16.dp
                 colors = TextFieldDefaults.colors(
@@ -586,7 +603,8 @@ fun PricesSection() {
                 ),
                 label = { Text("Sotuv narxi (UZS)") })
 
-            OutlinedTextField(value = receiptPrice,
+            OutlinedTextField(
+                value = markupPercentage,
                 onValueChange = {},
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp), // Set corner radius to 16.dp
@@ -600,8 +618,9 @@ fun PricesSection() {
                 ),
                 label = { Text("Ustama (%)") })
 
-            OutlinedTextField(value = receiptPrice,
-                onValueChange = {},
+            OutlinedTextField(
+                value = bulkPrice,
+                onValueChange = { viewModel.setDiscountPrice(it) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp), // Set corner radius to 16.dp
                 colors = TextFieldDefaults.colors(
@@ -638,8 +657,8 @@ fun PricesSection() {
                         )
 
                         Switch(
-                            checked = isFreePrice,
-                            onCheckedChange = { isFreePrice = !isFreePrice },
+                            checked = isFlexiblePrice,
+                            onCheckedChange = { isFlexiblePrice = !isFlexiblePrice },
                             colors = SwitchDefaults.colors(
                                 checkedBorderColor = AppTheme.color.primary,
                                 checkedThumbColor = Color.White,
@@ -657,8 +676,8 @@ fun PricesSection() {
 }
 
 @Composable
-fun ProductCount() {
-    var productCount by remember { mutableIntStateOf(0) }
+fun ProductCount(viewModel: AddProductViewModel) {
+    val productCount by viewModel.quantityState.collectAsState()
     Card(
         modifier = Modifier
             .padding(top = 16.dp)
@@ -714,9 +733,9 @@ fun ProductCount() {
                         Spacer(Modifier.width(8.dp))
 
                         OutlinedTextField(
-                            value = "",
+                            value = productCount,
                             onValueChange = {
-                                productCount = it.toIntOrNull() ?: 0
+                                viewModel.setQuantity(it)
                             },
                             placeholder = {
                                 Text(
@@ -927,7 +946,8 @@ fun ProductFeatures(navController: NavHostController) {
                 }
             }
 
-            OutlinedTextField(value = description,
+            OutlinedTextField(
+                value = description,
                 onValueChange = {},
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),

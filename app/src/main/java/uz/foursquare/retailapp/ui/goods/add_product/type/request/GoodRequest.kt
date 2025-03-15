@@ -9,7 +9,7 @@ data class GoodRequest(
     val sku: String,
     val discount_price: String,
     val unit: String,
-    val quantity: Int,
+    val quantity: String,
     val sale_price: String,
     val barcode: String,
     val purchase_price: String,

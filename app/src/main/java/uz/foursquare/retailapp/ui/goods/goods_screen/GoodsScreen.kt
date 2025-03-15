@@ -73,7 +73,6 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.flow.collect
 import uz.foursquare.retailapp.R
 import uz.foursquare.retailapp.navigation.home.AddProductScreens
-import uz.foursquare.retailapp.ui.goods.fake.FakeGoodsRepository
 import uz.foursquare.retailapp.ui.goods.goods_screen.types.GoodType
 import uz.foursquare.retailapp.ui.goods.goods_screen.view_model.GoodsViewModel
 import uz.foursquare.retailapp.ui.theme.AppTheme

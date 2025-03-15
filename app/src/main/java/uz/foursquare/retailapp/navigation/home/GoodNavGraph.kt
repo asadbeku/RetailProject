@@ -8,7 +8,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import uz.foursquare.retailapp.navigation.Graph
 import uz.foursquare.retailapp.ui.goods.add_product.AddProduct
-import uz.foursquare.retailapp.utils.SelectionScreen
+import uz.foursquare.retailapp.ui.goods.selection.SelectionScreen
 import uz.foursquare.retailapp.utils.SelectionWithDescriptionScreen
 
 fun NavGraphBuilder.addProductNavGraph(navController: NavHostController) {
