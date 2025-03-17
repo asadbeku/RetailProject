@@ -17,12 +17,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -153,9 +156,18 @@ private fun EmptyListMessage(message: String) {
 }
 
 @Composable
-private fun SelectionList(items: List<String>) {
+fun SelectionList(items: List<String>) {
+    var selectedIndex by remember { mutableStateOf(-1) } // Remember selected index
+
     LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(items) { item -> SelectionNameItem(item) }
+        itemsIndexed(items) { index, item ->
+            SelectionNameItem(
+                name = item,
+                index = index,
+                isSelected = index == selectedIndex,
+                onClick = { selectedIndex = index }
+            )
+        }
     }
 }
 
@@ -211,28 +223,32 @@ fun SearchBar(screenName: String) {
 }
 
 @Composable
-fun SelectionNameItem(name: String) {
+fun SelectionNameItem(name: String, index: Int, isSelected: Boolean, onClick: () -> Unit) {
     HorizontalDivider()
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(
-                onClick = { /* Handle click here */ },
-                indication = ripple(), // Use rememberRipple for ripple effect
-                interactionSource = remember { MutableInteractionSource() }, // For managing interactions
-                role = Role.Button // Optional: for accessibility
+                onClick = onClick, // Handle item selection
+                role = Role.Button
             )
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             name,
-            modifier = Modifier
-                .padding(top = 8.dp, bottom = 8.dp)
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 16.dp),
+            modifier = Modifier.weight(1f), // Take remaining space
             style = AppTheme.typography.headlineH3
         )
-    }
 
+        if (isSelected) { // Show check icon for selected item
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = "Selected",
+                tint = Color.Green
+            )
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
