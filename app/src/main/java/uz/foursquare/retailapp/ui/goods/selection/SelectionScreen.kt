@@ -1,5 +1,6 @@
 package uz.foursquare.retailapp.ui.goods.selection
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -16,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -25,7 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -63,6 +62,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import uz.foursquare.retailapp.ui.goods.selection.SelectionList
 import uz.foursquare.retailapp.ui.goods.selection.view_model.SelectionViewModel
 import uz.foursquare.retailapp.ui.theme.AppTheme
 import uz.foursquare.retailapp.ui.theme.Nunito
@@ -91,7 +91,7 @@ fun SelectionScreen(
 
     // Load data only when the screen is recomposed
     LaunchedEffect(type) {
-        type?.let { viewModel.loadSelectionList(it) }
+        type.let { viewModel.loadSelectionList(it) }
     }
 
     RetailAppTheme {
@@ -116,7 +116,12 @@ fun SelectionScreen(
                     when {
                         isLoading -> LoadingIndicator()
                         selectionList.isEmpty() -> EmptyListMessage("${currentScreen[screenName]?.first} mavjud emas, uni qo'shing...")
-                        else -> SelectionList(selectionList)
+                        else -> SelectionList(selectionList) {
+                            val item = viewModel.selectedItem(currentScreen[screenName]?.second, it)
+                            navController.previousBackStackEntry?.savedStateHandle?.set("selected_item", item)
+
+                            navController.popBackStack()
+                        }
                     }
                 }
             }
@@ -156,7 +161,7 @@ private fun EmptyListMessage(message: String) {
 }
 
 @Composable
-fun SelectionList(items: List<String>) {
+fun SelectionList(items: List<String>, onItemSelected: (Int) -> Unit) {
     var selectedIndex by remember { mutableStateOf(-1) } // Remember selected index
 
     LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -165,7 +170,10 @@ fun SelectionList(items: List<String>) {
                 name = item,
                 index = index,
                 isSelected = index == selectedIndex,
-                onClick = { selectedIndex = index }
+                onClick = {
+                    selectedIndex = index // Update selected index
+                    onItemSelected(selectedIndex)  // Pass selected item to callback
+                }
             )
         }
     }
@@ -245,7 +253,7 @@ fun SelectionNameItem(name: String, index: Int, isSelected: Boolean, onClick: ()
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = "Selected",
-                tint = Color.Green
+                tint = AppTheme.appColor.supportSuccessDark
             )
         }
     }

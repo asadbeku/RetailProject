@@ -25,7 +25,6 @@ class AddProductRepository @Inject constructor(
         return runCatching {
             val response = client.post(goodsUrl) {
                 contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer ${sharedPrefs.getToken()}")
                 setBody(product)
             }
 
@@ -36,5 +35,4 @@ class AddProductRepository @Inject constructor(
             }
         }
     }
-
 }

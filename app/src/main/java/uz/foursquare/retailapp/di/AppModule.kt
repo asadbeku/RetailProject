@@ -16,6 +16,7 @@ import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
@@ -53,6 +54,10 @@ class AppModule {
                 connectTimeoutMillis = 15_000
                 socketTimeoutMillis = 30_000
             }
+
+
+            install(HttpCookies)
+
 
             install(DefaultRequest) { // ✅ Set global headers (e.g., Authentication)
                 header(HttpHeaders.ContentType, ContentType.Application.Json)

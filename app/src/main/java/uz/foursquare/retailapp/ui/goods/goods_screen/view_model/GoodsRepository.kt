@@ -17,14 +17,12 @@ import javax.inject.Inject
 
 class GoodsRepository @Inject constructor(
     private val client: HttpClient,
-    private val apiService: ApiService,
-    private val sharedPrefs: SharedPrefsManager
+    private val apiService: ApiService
 ) {
     suspend fun getGoods(): Result<List<GoodType>> {
         return try {
             val response = client.get("${apiService.baseUrl}/products") {
                 contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer ${sharedPrefs.getToken()}")
             }
 
             if (response.status.isSuccess()) {

@@ -1,14 +1,20 @@
 package uz.foursquare.retailapp.ui.goods.selection.view_model
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import uz.foursquare.retailapp.ui.goods.selection.SelectedItem
+import uz.foursquare.retailapp.ui.goods.selection.brand.types.BrandType
 import uz.foursquare.retailapp.ui.goods.selection.brand.view_model.BrandRepository
+import uz.foursquare.retailapp.ui.goods.selection.category.types.CategoryType
 import uz.foursquare.retailapp.ui.goods.selection.category.view_model.CategoryRepository
 import uz.foursquare.retailapp.ui.goods.selection.product_unit.ProductUnitRepository
+import uz.foursquare.retailapp.ui.goods.selection.product_unit.type.ProductUnitType
+import uz.foursquare.retailapp.ui.goods.selection.suppliers.types.SupplierType
 import uz.foursquare.retailapp.ui.goods.selection.suppliers.view_model.SuppliersRepository
 import uz.foursquare.retailapp.utils.SelectionType
 import javax.inject.Inject
@@ -33,6 +39,10 @@ class SelectionViewModel @Inject constructor(
     private val _selectedName = MutableStateFlow("")
     val selectedName: StateFlow<String> = _selectedName
 
+    private val _brandList = MutableStateFlow<List<BrandType>>(emptyList())
+    private val _categoryList = MutableStateFlow<List<CategoryType>>(emptyList())
+    private val _supplierList = MutableStateFlow<List<SupplierType>>(emptyList())
+    private val _productUnitList = MutableStateFlow<List<ProductUnitType>>(emptyList())
 
     fun updateSelectedName(newName: String) {
         _selectedName.value = newName
@@ -43,16 +53,28 @@ class SelectionViewModel @Inject constructor(
             _isLoading.value = true
             val result = when (type) {
                 SelectionType.BRAND -> brandRepository.getBrands()
-                    .mapCatching { it.map { brand -> brand.name } }
+                    .mapCatching {
+                        _brandList.value = it
+                        it.map { brand -> brand.name }
+                    }
 
                 SelectionType.CATEGORY -> categoryRepository.getCategories()
-                    .mapCatching { it.map { category -> category.name } }
+                    .mapCatching {
+                        _categoryList.value = it
+                        it.map { category -> category.name }
+                    }
 
                 SelectionType.SUPPLIER -> suppliersRepository.getSuppliers()
-                    .mapCatching { it.map { supplier -> supplier.name } }
+                    .mapCatching {
+                        _supplierList.value = it
+                        it.map { supplier -> supplier.name }
+                    }
 
                 SelectionType.PRODUCT_UNIT -> productUnitRepository.getProductUnits()
-                    .mapCatching { it.map { unit -> unit.name } }
+                    .mapCatching {
+                        _productUnitList.value = it
+                        it.map { unit -> unit.name }
+                    }
             }
 
             result.fold(
@@ -86,5 +108,43 @@ class SelectionViewModel @Inject constructor(
                 onFailure = { _errorMessage.value = "Failed to add: ${it.message}" }
             )
         }
+    }
+
+    fun selectedItem(category: SelectionType?, index: Int): SelectedItem {
+        val id = when (category) {
+            SelectionType.BRAND -> SelectedItem(
+                _brandList.value[index].id,
+                _brandList.value[index].name,
+                "brand"
+            )
+
+            SelectionType.CATEGORY -> SelectedItem(
+                _categoryList.value[index].id,
+                _categoryList.value[index].name,
+                "category"
+            )
+
+            SelectionType.SUPPLIER -> SelectedItem(
+                _supplierList.value[index].id,
+                _supplierList.value[index].name,
+                "suppliers"
+            )
+
+            SelectionType.PRODUCT_UNIT -> SelectedItem(
+                _productUnitList.value[index].name,
+                _productUnitList.value[index].name,
+                "product_unit"
+            )
+
+            else -> {
+                _errorMessage.value = "Bunday kategoriya mavjud emas!"
+                SelectedItem("", "", "")
+
+            }
+        }
+
+        Log.d("TAG", "selectedItem: $id")
+
+        return id
     }
 }

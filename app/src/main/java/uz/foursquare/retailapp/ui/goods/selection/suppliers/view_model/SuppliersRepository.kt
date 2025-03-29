@@ -24,7 +24,6 @@ class SuppliersRepository @Inject constructor(
 ) {
     suspend fun getSuppliers(): Result<List<SupplierType>> = runCatching {
         val response = client.get("${apiService.baseUrl}/suppliers") {
-            header("Authorization", "Bearer ${sharedPrefsManager.getToken()}")
             contentType(ContentType.Application.Json)
         }
 
@@ -39,7 +38,6 @@ class SuppliersRepository @Inject constructor(
     suspend fun addSupplier(supplierName: String): Result<Unit> = runCatching {
         val response = client.post("${apiService.baseUrl}/suppliers") {
             contentType(ContentType.Application.Json)
-            header("Authorization", "Bearer ${sharedPrefsManager.getToken()}")
             setBody(JsonObject().apply { addProperty("name", supplierName) })
         }
 

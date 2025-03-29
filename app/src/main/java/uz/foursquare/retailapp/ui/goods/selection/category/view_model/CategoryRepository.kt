@@ -25,7 +25,6 @@ class CategoryRepository @Inject constructor(
 ) {
     suspend fun getCategories(): Result<List<CategoryType>> = runCatching {
         val response = client.get("${apiService.baseUrl}/categories") {
-            header("Authorization", "Bearer ${sharedPrefsManager.getToken()}")
             contentType(ContentType.Application.Json)
         }
 
@@ -40,7 +39,6 @@ class CategoryRepository @Inject constructor(
     suspend fun addCategory(categoryName: String): Result<String> = runCatching {
         val response = client.post("${apiService.baseUrl}/categories") {
             contentType(ContentType.Application.Json)
-            header("Authorization", "Bearer ${sharedPrefsManager.getToken()}")
             setBody(JsonObject().apply { addProperty("name", categoryName) })
         }
 
