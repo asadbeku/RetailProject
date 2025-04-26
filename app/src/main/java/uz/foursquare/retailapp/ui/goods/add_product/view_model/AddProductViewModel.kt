@@ -6,14 +6,27 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import uz.foursquare.retailapp.ui.goods.add_product.type.request.GoodRequest
+import uz.foursquare.retailapp.utils.getProductUnitServer
+import uz.foursquare.retailapp.utils.logException
 import javax.inject.Inject
 
 @HiltViewModel
 class AddProductViewModel @Inject constructor(
     private val repository: AddProductRepository
 ) : ViewModel() {
+
+    private var _errorMessage = MutableStateFlow("")
+    val errorMessage: StateFlow<String> = _errorMessage.asStateFlow()
+
+    private var _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private var _isAdded = MutableStateFlow(false)
+    val isAdded: StateFlow<Boolean> = _isAdded.asStateFlow()
+
 
     private val _name = MutableStateFlow("")
     val nameState: StateFlow<String> = _name
@@ -27,8 +40,8 @@ class AddProductViewModel @Inject constructor(
     private val _unit = MutableStateFlow("")
     val unitState: StateFlow<String> = _unit
 
-    private val _quantity = MutableStateFlow(0)
-    val quantityState: StateFlow<Int> = _quantity
+    private val _quantity = MutableStateFlow("")
+    val quantityState: StateFlow<String> = _quantity
 
     private val _salePrice = MutableStateFlow("")
     val salePriceState: StateFlow<String> = _salePrice
@@ -76,7 +89,7 @@ class AddProductViewModel @Inject constructor(
         _unit.value = value
     }
 
-    fun setQuantity(value: Int) {
+    fun setQuantity(value: String) {
         _quantity.value = value
     }
 
@@ -108,13 +121,17 @@ class AddProductViewModel @Inject constructor(
         _expirationDate.value = value
     }
 
+    fun clearError() {
+        _errorMessage.value = ""
+    }
+
     fun addProduct() {
         val product = GoodRequest(
             name = nameState.value,
             sku = skuState.value,
             discount_price = discountPriceState.value,
-            unit = unitState.value,
-            quantity = quantityState.value.toInt(),
+            unit = unitState.value.toString().getProductUnitServer(),
+            quantity = quantityState.value.toIntOrNull() ?: 0,
             sale_price = salePriceState.value,
             barcode = barcodeState.value,
             purchase_price = purchasePriceState.value,
@@ -125,7 +142,18 @@ class AddProductViewModel @Inject constructor(
         )
 
         viewModelScope.launch {
-            repository.addProduct(product)
+            _isLoading.value = true
+
+            val result = repository.addProduct(product)
+
+            result.onSuccess {
+                _isLoading.value = false
+                _isAdded.value = true
+            }.onFailure {
+                logException(it, "add_product", product.toString())
+                _isLoading.value = false
+                _errorMessage.value = it.message ?: "Tovar qo'shib bo'lmadi :("
+            }
         }
     }
 }

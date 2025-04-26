@@ -1,5 +1,6 @@
 package uz.foursquare.retailapp.ui.goods.selection.suppliers.view_model
 
+import com.google.firebase.perf.FirebasePerformance
 import com.google.gson.JsonObject
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -19,31 +20,38 @@ import javax.inject.Inject
 
 class SuppliersRepository @Inject constructor(
     private val apiService: ApiService,
-    private val client: HttpClient,
-    private val sharedPrefsManager: SharedPrefsManager
+    private val client: HttpClient
 ) {
     suspend fun getSuppliers(): Result<List<SupplierType>> = runCatching {
+        val trace = FirebasePerformance.getInstance().newTrace("get_suppliers_response")
+        trace.start()
+
         val response = client.get("${apiService.baseUrl}/suppliers") {
             contentType(ContentType.Application.Json)
         }
 
         if (!response.status.isSuccess()) {
+            trace.stop()
             throw Exception("Failed to fetch suppliers: ${response.status}")
         }
-
+        trace.stop()
         val result: SuppliersGetType = response.body()
         result.data.map { it.toSupplierType() }
     }
 
     suspend fun addSupplier(supplierName: String): Result<Unit> = runCatching {
+        val trace = FirebasePerformance.getInstance().newTrace("add_supplier_response")
+        trace.start()
         val response = client.post("${apiService.baseUrl}/suppliers") {
             contentType(ContentType.Application.Json)
             setBody(JsonObject().apply { addProperty("name", supplierName) })
         }
 
         if (!response.status.isSuccess()) {
+            trace.stop()
             throw Exception("Failed to add supplier: ${response.status}")
         }
+        trace.stop()
     }
 }
 

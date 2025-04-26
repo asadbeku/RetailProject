@@ -97,9 +97,9 @@ fun SelectionScreen(
     RetailAppTheme {
         Scaffold(
             topBar = {
-                SelectionToolbar(title, navController = navController) {
+                SelectionToolbar(title, navController = navController, onPress = {
                     shouldShowBottomSheet = true
-                }
+                })
             },
             containerColor = AppTheme.appColor.neutralLightLight
         ) { innerPadding ->
@@ -118,7 +118,10 @@ fun SelectionScreen(
                         selectionList.isEmpty() -> EmptyListMessage("${currentScreen[screenName]?.first} mavjud emas, uni qo'shing...")
                         else -> SelectionList(selectionList) {
                             val item = viewModel.selectedItem(currentScreen[screenName]?.second, it)
-                            navController.previousBackStackEntry?.savedStateHandle?.set("selected_item", item)
+                            navController.previousBackStackEntry?.savedStateHandle?.set(
+                                "selected_item",
+                                item
+                            )
 
                             navController.popBackStack()
                         }
@@ -299,7 +302,8 @@ fun SelectionToolbar(
                         interactionSource = remember { MutableInteractionSource() }
                     ),
                 style = AppTheme.typography.headlineH4,
-                color = AppTheme.color.primary)
+                color = AppTheme.color.primary
+            )
         }
     )
 }

@@ -19,13 +19,12 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val loginRepository: LoginRepository,
-    private val sharedPrefs: SharedPrefsManager
 ) : ViewModel() {
 
     private val _errorFlow = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val errorFlow = _errorFlow.asSharedFlow()
 
-    private val _phoneNumber = MutableStateFlow("")
+    private val _phoneNumber = MutableStateFlow("+998")
     val phoneNumber: StateFlow<String> = _phoneNumber
 
     private val _password = MutableStateFlow("")
@@ -49,6 +48,13 @@ class LoginViewModel @Inject constructor(
         val isPasswordValid = _password.value.length >= 6
         _uiState.value = _uiState.value.copy(isLoginEnabled = isPhoneValid && isPasswordValid)
     }
+
+    fun showError(message: String) {
+        viewModelScope.launch {
+            _errorFlow.emit(message)
+        }
+    }
+
 
     fun login(navController: NavController) {
         viewModelScope.launch {

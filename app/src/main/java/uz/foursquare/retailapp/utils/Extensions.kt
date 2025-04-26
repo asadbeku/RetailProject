@@ -1,8 +1,10 @@
 package uz.foursquare.retailapp.utils
 
 import android.icu.text.NumberFormat
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import uz.foursquare.retailapp.ui.goods.goods_screen.types.GoodType
 import uz.foursquare.retailapp.ui.goods.goods_screen.types.response.GoodsTypeResponse
+import uz.foursquare.retailapp.ui.goods.goods_screen.types.response.ProductData
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -43,4 +45,42 @@ fun GoodsTypeResponse.toGoodTypeList(): List<GoodType> {
             barcode = it.barcode
         )
     }
+}
+
+fun String.getProductUnitServer(): String {
+    return when (this) {
+        "dona" -> "pcs"
+        "metr" -> "m"
+        "metr²" -> "m2"
+        "metr³" -> "m3"
+        else -> this
+    }
+
+
+}
+
+fun ProductData.convertToGoodType(): GoodType {
+    return this@convertToGoodType.let {
+        GoodType(
+            id = id,
+            name = name,
+            count = quantity,
+            salePrice = salePrice.toDouble(),
+            purchasePrice = purchasePrice.toDouble(),
+            purchasePriceUSD = purchasePriceUsd.toDouble(),
+            salePriceUSD = salePriceUsd.toDouble(),
+            uniteType = unit,
+            barcode = barcode,
+        )
+    }
+}
+
+fun logException(exceptionName: Throwable, key: String, customData: String) {
+    val crashlytics = FirebaseCrashlytics.getInstance()
+
+    // Add custom key-value data
+    crashlytics.setCustomKey(key, customData)
+
+    // Record the exception properly
+    crashlytics.recordException(exceptionName)
 }

@@ -27,5 +27,5 @@ object Graph {
     const val AUTHENTICATION = "auth_graph"
     const val MAIN = "main_graph"
     const val ADD_PRODUCT = "add_product_graph"
-    const val GOODS = "goods_graph"
+    const val SALES = "sales_graph"
 }

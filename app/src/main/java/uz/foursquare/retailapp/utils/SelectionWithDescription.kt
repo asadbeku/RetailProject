@@ -40,9 +40,14 @@ fun SelectionWithDescriptionScreen(
 ) {
     RetailAppTheme {
         Scaffold(
-            topBar = { SelectionToolbar("${screenName}ni tanlang", navController = navController){
+            topBar = {
+                SelectionToolbar(
+                    "${screenName}ni tanlang",
+                    navController = navController,
+                    onPress = {
 
-            } },
+                    })
+            },
             containerColor = AppTheme.appColor.neutralLightLight
         ) { innerPadding ->
 

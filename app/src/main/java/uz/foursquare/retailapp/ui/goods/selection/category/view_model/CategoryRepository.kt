@@ -1,5 +1,6 @@
 package uz.foursquare.retailapp.ui.goods.selection.category.view_model
 
+import com.google.firebase.perf.FirebasePerformance
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.header
@@ -24,27 +25,34 @@ class CategoryRepository @Inject constructor(
     private val sharedPrefsManager: SharedPrefsManager
 ) {
     suspend fun getCategories(): Result<List<CategoryType>> = runCatching {
+        val trace = FirebasePerformance.getInstance().newTrace("get_category_response")
+        trace.start()
         val response = client.get("${apiService.baseUrl}/categories") {
             contentType(ContentType.Application.Json)
         }
 
         if (!response.status.isSuccess()) {
+            trace.stop()
             throw Exception("Failed to fetch categories: ${response.status}")
         }
-
+        trace.stop()
         val result: CategoryGetResponse = response.body()
         result.map { it.toCategoryType() }.sortedBy { it.name }
     }
 
     suspend fun addCategory(categoryName: String): Result<String> = runCatching {
+        val trace = FirebasePerformance.getInstance().newTrace("add_category_response")
+        trace.start()
         val response = client.post("${apiService.baseUrl}/categories") {
             contentType(ContentType.Application.Json)
             setBody(JsonObject().apply { addProperty("name", categoryName) })
         }
 
         if (!response.status.isSuccess()) {
+            trace.stop()
             throw Exception("Failed to add category: ${response.status}")
         }
+        trace.stop()
 
         "Success"
     }

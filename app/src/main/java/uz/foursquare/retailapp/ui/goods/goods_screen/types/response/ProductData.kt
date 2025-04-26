@@ -3,7 +3,7 @@ package uz.foursquare.retailapp.ui.goods.goods_screen.types.response
 
 import com.google.gson.annotations.SerializedName
 
-data class Data(
+data class ProductData(
     @SerializedName("barcode")
     val barcode: String,
     @SerializedName("category")

@@ -73,7 +73,15 @@ class SelectionViewModel @Inject constructor(
                 SelectionType.PRODUCT_UNIT -> productUnitRepository.getProductUnits()
                     .mapCatching {
                         _productUnitList.value = it
-                        it.map { unit -> unit.name }
+                        it.map { unit ->
+                            if (unit.name == "metr2") {
+                                "metr²"
+                            } else if (unit.name == "metr3") {
+                                "metr³"
+                            } else {
+                                unit.name
+                            }
+                        }
                     }
             }
 

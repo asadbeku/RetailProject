@@ -27,6 +27,10 @@ class GoodsViewModel @Inject constructor(private val repository: GoodsRepository
         getGoods()
     }
 
+    fun clearError() {
+        _errorMessage.value = ""
+    }
+
     private fun getGoods() {
         viewModelScope.launch {
             _isLoading.value = true  // Update state synchronously
@@ -46,5 +50,4 @@ class GoodsViewModel @Inject constructor(private val repository: GoodsRepository
             }
         }
     }
-
 }

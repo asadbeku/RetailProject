@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -41,6 +43,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -52,6 +57,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -72,19 +78,49 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import co.yml.charts.common.extensions.isNotNull
 import coil.compose.AsyncImage
 import uz.foursquare.retailapp.R
-import uz.foursquare.retailapp.ui.goods.goods_screen.types.GoodType
-import uz.foursquare.retailapp.ui.goods.goods_screen.SearchBar
+import uz.foursquare.retailapp.navigation.home.SalesScreen
+import uz.foursquare.retailapp.ui.sales.type.CartItem
+import uz.foursquare.retailapp.ui.sales.view_model.SalesViewModel
 import uz.foursquare.retailapp.ui.theme.AppTheme
 import uz.foursquare.retailapp.ui.theme.RetailAppTheme
 import uz.foursquare.retailapp.utils.convertToPriceFormat
+import uz.foursquare.retailapp.utils.ui_components.LoadingIndicator
 
 
 @Composable
-fun SalesScreen(navController: NavController) {
+fun SalesScreen(
+    navController: NavHostController,
+    viewModel: SalesViewModel = hiltViewModel<SalesViewModel>()
+) {
+    val productId =
+        navController.currentBackStackEntry?.savedStateHandle?.get<String>("product_id")
+    val snackBarHostState = remember { SnackbarHostState() }
+    val products = viewModel.goods.collectAsState().value ?: emptyList()
+    val isLoading = viewModel.isLoading.collectAsState().value
+
+    LaunchedEffect(productId) {
+        if (productId.isNotNull()) {
+            viewModel.getProductById(productId)
+            navController.currentBackStackEntry?.savedStateHandle?.remove<String>("product_id")
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.errorMessage.collect { message ->
+            if (message.isNotNull() && message?.isNotBlank() == true) {
+                snackBarHostState.showSnackbar(message)
+            }
+            viewModel.clearErrorMessage()
+        }
+    }
+
     RetailAppTheme {
         Scaffold(
             topBar = { SalesToolbar(title = "Sales") },
@@ -92,43 +128,94 @@ fun SalesScreen(navController: NavController) {
         ) { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    SalesCardScreen()
+                    SalesCardScreen(navController, products)
+                    ProductsScreen(products, isLoading, viewModel)
                 }
-                BottomContainer(navController)
+                Column {
+                    SnackbarHost(snackBarHostState) { snackBarData ->
+                        Snackbar(
+                            snackBarData, modifier = Modifier,
+                            actionOnNewLine = false,
+                            shape = RoundedCornerShape(16.dp),
+                            containerColor = AppTheme.appColor.supportWarningMedium,
+                            contentColor = Color.White,
+                            actionColor = Color.Red,
+                            actionContentColor = Color.Green,
+                            dismissActionContentColor = Color.Blue,
+                        )
+                    }
+
+                    BottomContainer(navController, viewModel)
+                }
             }
         }
     }
 }
 
 @Composable
-fun SalesCardScreen() {
+fun SalesCardScreen(navigation: NavHostController, products: List<CartItem>) {
     Card(
         modifier = Modifier
             .padding(top = 8.dp, bottom = 4.dp)
-            .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
+            .fillMaxWidth()
+            .clickable {
+                navigation.navigate(SalesScreen.SearchScreen.route)
+            }, colors = CardDefaults.cardColors(
             containerColor = Color.White
         )
     ) {
-        Column(modifier = Modifier.padding(4.dp)) {
-            SearchBar()
+        Column(
+            modifier = Modifier.padding(
+                start = 12.dp,
+                end = 12.dp,
+                top = 16.dp,
+                bottom = 16.dp
+            )
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(text = "Qidirish")
+            }
         }
     }
-    ProductsScreen()
 }
 
 @Composable
-fun ProductsScreen() {
-//    LazyColumn(modifier = Modifier) {
-//        items(goods.size) {
-//            ProductItem(goods[it])
-//        }
-//    }
+fun ProductsScreen(products: List<CartItem>, isLoading: Boolean, viewModel: SalesViewModel) {
+
+    if (isLoading) {
+        LoadingIndicator()
+    }
+
+    LazyColumn(modifier = Modifier) {
+        itemsIndexed(products) { index, item ->
+            ProductItem(
+                products[index],
+                index,
+                onIncrement = { viewModel.incrementQuantity(index) },
+                onDecrement = { viewModel.decrementQuantity(index) }
+            )
+        }
+    }
+
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductItem(goodItem: GoodType) {
+fun ProductItem(
+    goodItem: CartItem,
+    index: Int,
+    onIncrement: (Int) -> Unit,
+    onDecrement: (Int) -> Unit
+) {
     Card(
         modifier = Modifier
             .padding(top = 4.dp, bottom = 4.dp)
@@ -144,8 +231,7 @@ fun ProductItem(goodItem: GoodType) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { showBottomSheet = true }
-            ) {
+                    .clickable { showBottomSheet = true }) {
                 AsyncImage(
                     model = "https://images.unsplash.com/photo-1503602642458-232111445657?q=80&w=2574&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
                     contentDescription = "Good image",
@@ -158,12 +244,11 @@ fun ProductItem(goodItem: GoodType) {
                 )
 
                 Column(
-                    modifier = Modifier
-                        .padding(0.dp)
+                    modifier = Modifier.padding(0.dp)
                 ) {
 
                     Text(
-                        text = goodItem.name,
+                        text = goodItem.product.name,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = AppTheme.typography.headlineH4,
@@ -171,7 +256,7 @@ fun ProductItem(goodItem: GoodType) {
                     )
 
                     Text(
-                        text = goodItem.salePrice.convertToPriceFormat(),
+                        text = goodItem.product.salePrice.convertToPriceFormat(),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = AppTheme.typography.headlineH5,
@@ -180,7 +265,7 @@ fun ProductItem(goodItem: GoodType) {
                     )
 
                     Text(
-                        text = "${goodItem.count} ${goodItem.uniteType} / ${goodItem.barcode}",
+                        text = "${goodItem.product.count} ${goodItem.product.uniteType} / ${goodItem.product.barcode}",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = AppTheme.typography.bodyS
@@ -190,8 +275,7 @@ fun ProductItem(goodItem: GoodType) {
             }
 
             Card(
-                modifier = Modifier.padding(end = 16.dp),
-                colors = CardDefaults.cardColors(
+                modifier = Modifier.padding(end = 16.dp), colors = CardDefaults.cardColors(
                     containerColor = AppTheme.appColor.neutralLightLight
                 )
             ) {
@@ -202,11 +286,15 @@ fun ProductItem(goodItem: GoodType) {
                     Text(
                         text = "-",
                         style = AppTheme.typography.headlineH1,
-                        modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+                        modifier = Modifier
+                            .padding(start = 4.dp, end = 4.dp)
+                            .clickable {
+                                onDecrement(index)
+                            },
                         color = AppTheme.color.primary
                     )
                     Text(
-                        text = "1",
+                        text = goodItem.quantity.toString(),
                         style = AppTheme.typography.headlineH3,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp)
@@ -214,7 +302,11 @@ fun ProductItem(goodItem: GoodType) {
                     Text(
                         text = "+",
                         style = AppTheme.typography.headlineH1,
-                        modifier = Modifier.padding(start = 8.dp, end = 4.dp),
+                        modifier = Modifier
+                            .padding(start = 8.dp, end = 4.dp)
+                            .clickable {
+                                onIncrement(index)
+                            },
                         color = AppTheme.color.primary
                     )
                 }
@@ -225,9 +317,7 @@ fun ProductItem(goodItem: GoodType) {
             ModalBottomSheet(
                 onDismissRequest = {
                     showBottomSheet = false
-                },
-                sheetState = sheetState,
-                containerColor = AppTheme.appColor.neutralLightLight
+                }, sheetState = sheetState, containerColor = AppTheme.appColor.neutralLightLight
             ) {
                 // Sheet content
                 SheetContent()
@@ -252,8 +342,7 @@ fun SheetContent() {
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+        modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "Tovar soni va chegirmasi",
@@ -270,8 +359,7 @@ fun SheetContent() {
                     modifier = Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
                     color = AppTheme.color.primary
                 )
-            }
-        ) {
+            }) {
             tabs.forEachIndexed { index, title ->
                 Tab(
                     text = { Text(text = title) },
@@ -296,8 +384,7 @@ fun SheetContent() {
         }
 
         HorizontalPager(
-            state = pagerState,
-            modifier = Modifier
+            state = pagerState, modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) { index ->
@@ -311,7 +398,7 @@ fun SheetContent() {
 }
 
 @Composable
-fun BottomContainer(navController: NavController) {
+fun BottomContainer(navController: NavController, viewModel: SalesViewModel) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -328,9 +415,7 @@ fun BottomContainer(navController: NavController) {
                 .padding(8.dp)
         ) {
             Button(
-                onClick = {
-//                    navController.navigate(Graph.MAIN)
-                },
+                onClick = {},
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .padding(8.dp)
@@ -361,7 +446,21 @@ fun BottomContainer(navController: NavController) {
 
             Button(
                 onClick = {
-//                    navController.navigate(Graph.MAIN)
+                    viewModel.getOrderData()?.let { data ->
+                        if (data.products.isEmpty()) {
+                            viewModel.showError("Tovar tanlanmagan...")
+                        } else {
+                            println(data)
+                            navController.currentBackStackEntry?.savedStateHandle?.set(
+                                "order_data",
+                                data
+                            )
+                            navController.navigate(SalesScreen.OrderTransactionScreen.route) {
+                                popUpTo(SalesScreen.CartScreen.route)
+                            }
+                        }
+
+                    }
                 },
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
@@ -388,9 +487,7 @@ fun BottomContainer(navController: NavController) {
 
                 }
             )
-
         }
-
     }
 }
 
@@ -399,24 +496,24 @@ fun BottomContainer(navController: NavController) {
 fun SalesToolbar(
     title: String, onNavigationIconClick: () -> Unit = {}
 ) {
-    TopAppBar(title = {
-        Text(
-            title,
-            color = MaterialTheme.colorScheme.onSurface,
-            style = AppTheme.typography.headlineH3
-        )
-    }, actions = {
-        IconButton(onClick = onNavigationIconClick) {
-            Icon(
-                Icons.Default.AccountCircle,
-                contentDescription = "Back",
-                modifier = Modifier.size(30.dp)
+    TopAppBar(
+        title = {
+            Text(
+                title,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = AppTheme.typography.headlineH3
             )
-        }
-    }, colors = TopAppBarDefaults.topAppBarColors(
-        containerColor = Color.White, titleContentColor = Color.Black
-    ),
-        modifier = Modifier.clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
+        }, actions = {
+            IconButton(onClick = onNavigationIconClick) {
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = "Back",
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+        }, colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.White, titleContentColor = Color.Black
+        ), modifier = Modifier.clip(RoundedCornerShape(bottomStart = 16.dp, bottomEnd = 16.dp))
     )
 }
 
@@ -487,8 +584,7 @@ fun ProductCountSheetScreen() {
                 Text(
                     text = "Tovar sonini kiriting",
                     style = AppTheme.typography.headlineH3,
-                    modifier = Modifier
-                        .wrapContentHeight()
+                    modifier = Modifier.wrapContentHeight()
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -498,9 +594,7 @@ fun ProductCountSheetScreen() {
                         .weight(1f)
                         .wrapContentWidth()
                         .border(
-                            2.dp,
-                            AppTheme.appColor.highlightDarkest,
-                            RoundedCornerShape(16.dp)
+                            2.dp, AppTheme.appColor.highlightDarkest, RoundedCornerShape(16.dp)
                         )
                         .clip(
                             RoundedCornerShape(16.dp)
@@ -562,7 +656,7 @@ fun ProductCountSheetScreen() {
 @Composable
 fun ProductDiscountSheetScreen() {
     var discount by remember { mutableStateOf("0") }
-    var discountRates: List<String> = listOf("15%", "30%", "50%", "75%")
+    var discountRates: List<String> = listOf("15", "30", "50", "75")
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -636,14 +730,11 @@ fun ProductDiscountSheetScreen() {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 placeholder = {
                     Text(
-                        "Chegirma summasini",
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
+                        "Chegirma summasini", overflow = TextOverflow.Ellipsis, maxLines = 1
                     )
-                }
-            )
+                })
             Spacer(modifier = Modifier.padding(end = 8.dp))
-            SingleChoiceSegmentedButton(modifier = Modifier.height(52.dp))
+            SingleChoiceSegmentedButton(modifier = Modifier.height(52.dp), onSelected = {})
         }
 
         DiscountButton(discountRates, modifier = Modifier.padding(top = 8.dp)) { }
@@ -656,21 +747,31 @@ fun ProductDiscountSheetScreen() {
 }
 
 @Composable
-fun DiscountButton(list: List<String>, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-        list.forEach { name ->
+fun DiscountButton(
+    rates: List<String>,
+    modifier: Modifier = Modifier,
+    onRateClick: (Int) -> Unit
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        rates.forEachIndexed { index, rate ->
             FilledTonalButton(
-                onClick = onClick, colors = ButtonDefaults.filledTonalButtonColors(
+                onClick = { onRateClick(index) },
+                colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = AppTheme.appColor.highlightLightest,
                     contentColor = AppTheme.color.primary
                 )
-            ) { Text(text = name) }
+            ) {
+                Text(text = "$rate%")
+            }
         }
     }
 }
 
 @Composable
-fun SingleChoiceSegmentedButton(modifier: Modifier = Modifier) {
+fun SingleChoiceSegmentedButton(modifier: Modifier = Modifier, onSelected: (Int) -> Unit) {
     var selectedIndex by remember { mutableIntStateOf(0) }
     val options = listOf("%", "UZS")
 
@@ -678,11 +779,12 @@ fun SingleChoiceSegmentedButton(modifier: Modifier = Modifier) {
         options.forEachIndexed { index, label ->
             SegmentedButton(
                 shape = SegmentedButtonDefaults.itemShape(
-                    index = index,
-                    count = options.size,
-                    baseShape = RoundedCornerShape(16.dp)
+                    index = index, count = options.size, baseShape = RoundedCornerShape(16.dp)
                 ),
-                onClick = { selectedIndex = index },
+                onClick = {
+                    selectedIndex = index
+                    onSelected(selectedIndex)
+                },
                 selected = index == selectedIndex,
                 label = { Text(label) },
                 colors = SegmentedButtonDefaults.colors(

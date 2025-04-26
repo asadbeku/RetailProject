@@ -1,6 +1,9 @@
 package uz.foursquare.retailapp.ui.goods.add_product
 
+import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -23,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material3.Button
@@ -30,6 +34,7 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -39,6 +44,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -49,9 +58,11 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,11 +80,15 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import co.yml.charts.common.extensions.isNotNull
+import kotlinx.coroutines.launch
 import uz.foursquare.retailapp.R
 import uz.foursquare.retailapp.navigation.home.AddProductScreens
 import uz.foursquare.retailapp.ui.goods.add_product.view_model.AddProductViewModel
+import uz.foursquare.retailapp.ui.goods.selection.SelectedItem
 import uz.foursquare.retailapp.ui.theme.AppTheme
 import uz.foursquare.retailapp.ui.theme.RetailAppTheme
+import uz.foursquare.retailapp.utils.ui_components.LoadingIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,6 +97,38 @@ fun AddProduct(
     viewModel: AddProductViewModel = hiltViewModel()
 ) {
     var shouldShowBottomSheet by remember { mutableStateOf(false) }
+    var snackBarHostState = remember { SnackbarHostState() }
+    val isLoading by viewModel.isLoading.collectAsState()
+    val isAdded by viewModel.isAdded.collectAsState()
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+    var selectionItem by remember { mutableStateOf<SelectedItem?>(null) }
+
+    println(savedStateHandle?.getLiveData<SelectedItem>("selected_item")?.value.toString())
+
+    LaunchedEffect(savedStateHandle) {
+        savedStateHandle?.getLiveData<SelectedItem>("selected_item")?.observeForever { selected ->
+            selectionItem = selected
+            selectionItem?.let {
+                when (it.screenName) {
+                    "brand" -> viewModel.setBrand(mapOf(it.id to it.name))
+                    "suppliers" -> viewModel.setSupplier(mapOf(it.id to it.name))
+                    "category" -> viewModel.setCategory(mapOf(it.id to it.name))
+                    "product_unit" -> viewModel.setUnit(it.name)
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.errorMessage.collect { message ->
+            if (message.isNotBlank()) {
+                snackBarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+
+                viewModel.clearError()
+            }
+        }
+    }
+
     RetailAppTheme {
         Scaffold(
             topBar = {
@@ -92,9 +139,42 @@ fun AddProduct(
                     navController = navController,
                     viewModel
                 ) { shouldShowBottomSheet = true }
-            }, containerColor = AppTheme.appColor.neutralLightLight
+            },
+            containerColor = AppTheme.appColor.neutralLightLight,
+            snackbarHost = {
+                SnackbarHost(snackBarHostState) {
+                    Snackbar(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+                        containerColor = AppTheme.appColor.supportWarningMedium,
+                        contentColor = Color.White
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Clear,
+                                contentDescription = "Error",
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .padding(end = 8.dp)
+                            )
+                            Text(text = it.visuals.message)
+                        }
+                    }
+                }
+            }
         ) { innerPadding ->
             AddProductScreen(innerPadding = innerPadding, navController, viewModel)
+
+            BackHandler {
+                shouldShowBottomSheet = true
+            }
+
+            if (isLoading) {
+                LoadingIndicator()
+            }
+
             if (shouldShowBottomSheet) {
                 QuitBottomSheet(
                     navController = navController,
@@ -103,7 +183,6 @@ fun AddProduct(
                     shouldShowBottomSheet = false
                 }
             }
-
         }
     }
 }
@@ -122,9 +201,8 @@ fun AddProductScreen(
 
         item { PricesSection(viewModel) }
 
-        item { ProductFeatures(navController) }
+        item { ProductFeatures(navController, viewModel) }
     }
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -186,8 +264,7 @@ fun QuitBottomSheet(
     onDismiss: () -> Unit
 ) {
     var showBottomSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberStandardBottomSheetState()
-    val scope = rememberCoroutineScope()
+    val sheetState = rememberStandardBottomSheetState(skipHiddenState = false)
 
     showBottomSheet = sheetStateValue
     if (showBottomSheet) {
@@ -354,6 +431,9 @@ fun MainSection(navController: NavHostController, viewModel: AddProductViewModel
         val article by viewModel.skuState.collectAsState()
         val productCountType by remember { mutableStateOf("") }
         val isVariate by remember { mutableStateOf(false) }
+        var productUnit = viewModel.unitState.collectAsState().value.toString()
+
+
         Column(modifier = Modifier.padding(16.dp)) {
 
             Text(
@@ -471,10 +551,10 @@ fun MainSection(navController: NavHostController, viewModel: AddProductViewModel
                         )
 
                         Text(
-                            text = "Dona",
+                            text = if (productUnit.isNotBlank()) productUnit else "Tanlanmagan",
                             style = AppTheme.typography.headlineH4,
                             modifier = Modifier.padding(end = 4.dp),
-                            color = AppTheme.color.primary
+                            color = if (productUnit.isBlank()) AppTheme.appColor.neutralDarkLightest else AppTheme.color.primary
                         )
 
                         Icon(
@@ -677,7 +757,7 @@ fun PricesSection(viewModel: AddProductViewModel) {
 
 @Composable
 fun ProductCount(viewModel: AddProductViewModel) {
-    val productCount by viewModel.quantityState.collectAsState()
+    val productCount = viewModel.quantityState.collectAsState()
     Card(
         modifier = Modifier
             .padding(top = 16.dp)
@@ -733,10 +813,8 @@ fun ProductCount(viewModel: AddProductViewModel) {
                         Spacer(Modifier.width(8.dp))
 
                         OutlinedTextField(
-                            value = productCount,
-                            onValueChange = {
-                                viewModel.setQuantity(it)
-                            },
+                            value = productCount.value,
+                            onValueChange = { viewModel.setQuantity(it) },
                             placeholder = {
                                 Text(
                                     "0",
@@ -775,180 +853,34 @@ fun ProductCount(viewModel: AddProductViewModel) {
 }
 
 @Composable
-fun ProductFeatures(navController: NavHostController) {
-
-    var brandName by remember { mutableStateOf("") }
-    var supplierName by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("") }
+fun ProductFeatures(navController: NavHostController, viewModel: AddProductViewModel) {
+    var brandMap = viewModel.brandState.collectAsState()
+    var supplierMap = viewModel.supplierState.collectAsState()
+    var categoryMap = viewModel.categoryState.collectAsState()
     var description by remember { mutableStateOf("") }
 
     Card(
         modifier = Modifier
-            .padding(top = 16.dp, bottom = 8.dp)
+            .padding(vertical = 8.dp)
             .fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Xususiyatlar",
-                style = AppTheme.typography.headlineH2,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
+            Text("Xususiyatlar", style = AppTheme.typography.headlineH2)
             HorizontalDivider()
             Text(
-                text = "Quida keltirilgan maxsulot xususiyatlariga doir ma'lumotlarni kiriting",
+                text = "Quyida keltirilgan mahsulot xususiyatlariga doir ma'lumotlarni kiriting",
                 style = AppTheme.typography.bodyM,
-                modifier = Modifier.padding(bottom = 8.dp, top = 8.dp)
+                modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            Card(
-                colors = CardDefaults.cardColors(containerColor = AppTheme.appColor.neutralLightLight),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(top = 8.dp)
-                    .clickable(
-                        onClick = {
-                            navController.navigate(AddProductScreens.Selection.route + "/brand")
-                        }, indication = ripple(), // Use rememberRipple for ripple effect
-                        interactionSource = remember { MutableInteractionSource() }, // For managing interactions
-                        role = Role.Button // Optional: for accessibility
-                    )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .fillMaxSize(), // Make the Box fill the card's remaining space
-                    contentAlignment = Alignment.Center, // Center content within the Box
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Brend nomi",
-                            style = AppTheme.typography.bodyL,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .weight(1f) // Maintain weight for potential resizing
-                                .wrapContentHeight()
-                                .padding(start = 8.dp)
-                        )
-
-                        Text(
-                            text = "Tanlanmagan",
-                            style = AppTheme.typography.headlineH4,
-                            modifier = Modifier.padding(end = 4.dp),
-                            color = AppTheme.appColor.neutralDarkLightest
-                        )
-
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = AppTheme.color.primary
-                        )
-                    }
-                }
-            }
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = AppTheme.appColor.neutralLightLight),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(top = 8.dp)
-                    .clickable(
-                        onClick = {
-                            navController.navigate(AddProductScreens.Selection.route + "/suppliers")
-                        },
-                        indication = ripple(),
-                        interactionSource = remember { MutableInteractionSource() },
-                        role = Role.Button
-                    )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .fillMaxSize(), // Make the Box fill the card's remaining space
-                    contentAlignment = Alignment.Center, // Center content within the Box
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Yetkazib beruvchilar",
-                            style = AppTheme.typography.bodyL,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .weight(1f) // Maintain weight for potential resizing
-                                .wrapContentHeight()
-                                .padding(start = 8.dp)
-                        )
-
-                        Text(
-                            text = "Tanlanmagan",
-                            style = AppTheme.typography.headlineH4,
-                            modifier = Modifier.padding(end = 4.dp),
-                            color = AppTheme.appColor.neutralDarkLightest
-                        )
-
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = AppTheme.color.primary
-                        )
-                    }
-                }
-            }
-
-            Card(
-                colors = CardDefaults.cardColors(containerColor = AppTheme.appColor.neutralLightLight),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .padding(top = 8.dp)
-                    .clickable(
-                        onClick = {
-                            navController.navigate(AddProductScreens.Selection.route + "/category")
-                        },
-                        indication = ripple(),
-                        interactionSource = remember { MutableInteractionSource() },
-                        role = Role.Button
-                    )
-            ) {
-                Box(
-                    modifier = Modifier
-                        .padding(4.dp)
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "Turkum",
-                            style = AppTheme.typography.bodyL,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier
-                                .weight(1f)
-                                .wrapContentHeight()
-                                .padding(start = 8.dp)
-                        )
-
-                        Text(
-                            text = "Tanlanmagan",
-                            style = AppTheme.typography.headlineH4,
-                            modifier = Modifier.padding(end = 4.dp),
-                            color = AppTheme.appColor.neutralDarkLightest
-                        )
-
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowRight,
-                            contentDescription = null,
-                            tint = AppTheme.color.primary
-                        )
-                    }
-                }
-            }
+            FeatureCard(navController, "Brend nomi", "brand", brandMap?.value)
+            FeatureCard(navController, "Yetkazib beruvchilar", "suppliers", supplierMap?.value)
+            FeatureCard(navController, "Turkum", "category", categoryMap?.value)
 
             OutlinedTextField(
                 value = description,
-                onValueChange = {},
+                onValueChange = { description = it },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = TextFieldDefaults.colors(
@@ -956,10 +888,56 @@ fun ProductFeatures(navController: NavHostController) {
                     focusedContainerColor = AppTheme.appColor.neutralLightLight,
                     unfocusedIndicatorColor = Color.Transparent,
                     focusedIndicatorColor = AppTheme.color.primary,
-                    cursorColor = AppTheme.color.primary,
-                    focusedLabelColor = AppTheme.color.primary
+                    cursorColor = AppTheme.color.primary
                 ),
-                label = { Text("Tavsif") })
+                label = { Text("Tavsif") }
+            )
+        }
+    }
+}
+
+@Composable
+fun FeatureCard(
+    navController: NavHostController,
+    title: String,
+    route: String,
+    dataMap: Map<String, String>?
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = AppTheme.appColor.neutralLightLight),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .padding(top = 8.dp)
+            .clickable(onClick = { navController.navigate(AddProductScreens.Selection.route + "/$route") })
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(4.dp)
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = title,
+                    style = AppTheme.typography.bodyL,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp)
+                )
+                Text(
+                    text = dataMap?.values?.firstOrNull() ?: "Tanlanmagan",
+                    style = AppTheme.typography.headlineH4,
+                    modifier = Modifier.padding(end = 4.dp),
+                    color = if (dataMap.isNullOrEmpty()) AppTheme.appColor.neutralDarkLightest else AppTheme.color.primary
+                )
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = AppTheme.color.primary
+                )
+            }
         }
     }
 }

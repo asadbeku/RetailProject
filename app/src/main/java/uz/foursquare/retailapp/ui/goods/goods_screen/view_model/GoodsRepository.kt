@@ -1,5 +1,6 @@
 package uz.foursquare.retailapp.ui.goods.goods_screen.view_model
 
+import com.google.firebase.perf.FirebasePerformance
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -20,6 +21,9 @@ class GoodsRepository @Inject constructor(
     private val apiService: ApiService
 ) {
     suspend fun getGoods(): Result<List<GoodType>> {
+        val trace = FirebasePerformance.getInstance().newTrace("get_products_response")
+        trace.start()
+
         return try {
             val response = client.get("${apiService.baseUrl}/products") {
                 contentType(ContentType.Application.Json)
@@ -28,11 +32,13 @@ class GoodsRepository @Inject constructor(
             if (response.status.isSuccess()) {
                 Result.success(response.body<GoodsTypeResponse>().toGoodTypeList())
             } else {
-                Result.failure(Exception())
+                Result.failure(Exception(response.status.value.toString()))
             }
 
         } catch (e: Exception) {
             Result.failure(e)
+        } finally {
+            trace.stop()
         }
     }
 

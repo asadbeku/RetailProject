@@ -2,6 +2,7 @@ package uz.foursquare.retailapp.ui.auth.login
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -37,6 +39,7 @@ fun LoginScreen(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val uiState by viewModel.uiState.collectAsState()
+    val isEnabled = uiState.isLoginEnabled
 
     LaunchedEffect(Unit) {
         viewModel.errorFlow.collect { message ->
@@ -53,50 +56,63 @@ fun LoginScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.Top,
+                    .padding(16.dp)
+                    .imePadding(), // 👈 important: push content above keyboard
+                verticalArrangement = Arrangement.SpaceBetween, // 👈 important
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                LoginCard(viewModel)
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                // ✅ Snackbar above LoginButton
-                SnackbarHost(hostState = snackbarHostState) { snackbarData ->
-                    Snackbar(
-                        modifier = Modifier
-                            .padding(bottom = 8.dp) // Adjust padding above the button
-                            .fillMaxWidth(),
-                        containerColor = AppTheme.appColor.supportWarningMedium,
-                        contentColor = Color.White
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Clear, // Error icon
-                                contentDescription = "Error",
-                                tint = Color.White,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(end = 8.dp)
-                            )
-                            Text(text = snackbarData.visuals.message)
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    LoginCard(viewModel, onDonePress = {
+                        if (isEnabled) {
+                            viewModel.login(navController)
+                        } else {
+                            viewModel.showError("Kirish ma'lumotlari to'liq kiritilmadi")
                         }
-                    }
+                    })
                 }
 
-                LoginButton(
-                    onClick = { viewModel.login(navController) },
-                    isEnabled = uiState.isLoginEnabled
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    SnackbarHost(hostState = snackbarHostState) { snackbarData ->
+                        Snackbar(
+                            modifier = Modifier
+                                .padding(bottom = 8.dp)
+                                .fillMaxWidth(),
+                            containerColor = AppTheme.appColor.supportWarningMedium,
+                            contentColor = Color.White
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Error",
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .size(20.dp)
+                                        .padding(end = 8.dp)
+                                )
+                                Text(text = snackbarData.visuals.message)
+                            }
+                        }
+                    }
+
+                    LoginButton(
+                        onClick = { viewModel.login(navController) },
+                        isEnabled = isEnabled
+                    )
+                }
             }
         }
     }
 }
 
+
 @Composable
-fun LoginCard(viewModel: LoginViewModel) {
+fun LoginCard(viewModel: LoginViewModel, onDonePress: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -112,7 +128,9 @@ fun LoginCard(viewModel: LoginViewModel) {
             PhoneNumberField(viewModel)
 
             Spacer(modifier = Modifier.height(16.dp))
-            PasswordField(viewModel)
+            PasswordField(viewModel, onDonePress = {
+                onDonePress()
+            })
 
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -134,6 +152,7 @@ fun PhoneNumberField(viewModel: LoginViewModel) {
         onValueChange = {
             viewModel.updatePhoneNumber(numericRegex.replace(it, "").take(13))
         },
+        singleLine = true,
         placeholder = { Text("+998 (XX)-XXX-XX-XX") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.fillMaxWidth(),
@@ -184,18 +203,27 @@ fun PhoneNumberField(viewModel: LoginViewModel) {
 }
 
 @Composable
-fun PasswordField(viewModel: LoginViewModel) {
+fun PasswordField(viewModel: LoginViewModel, onDonePress: () -> Unit) {
     val password by viewModel.password.collectAsState()
     var isPasswordVisible by remember { mutableStateOf(false) }
 
     OutlinedTextField(
         value = password,
         onValueChange = { viewModel.updatePassword(it) },
+        singleLine = true,
         label = { Text("Parol") },
         visualTransformation = if (isPasswordVisible) VisualTransformation.None
         else PasswordVisualTransformation(),
         modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Password),
+        keyboardOptions = KeyboardOptions.Default.copy(
+            keyboardType = KeyboardType.Password,
+            imeAction = ImeAction.Done // 👈 tell the keyboard to show "Done" button
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = {
+                onDonePress() // 👈 when user presses "Done", call login function
+            }
+        ),
         trailingIcon = {
             IconButton(onClick = { isPasswordVisible = !isPasswordVisible }) {
                 Icon(
@@ -207,43 +235,36 @@ fun PasswordField(viewModel: LoginViewModel) {
             }
         },
         colors = TextFieldDefaults.colors(
+            // your colors here (same as you wrote)
             focusedTextColor = AppTheme.appColor.neutralDarkDarkest,
             unfocusedTextColor = AppTheme.appColor.neutralDarkMedium,
             disabledTextColor = AppTheme.appColor.neutralDarkLight,
             errorTextColor = AppTheme.appColor.supportErrorDark,
-
             focusedContainerColor = AppTheme.appColor.highlightLightest,
             unfocusedContainerColor = AppTheme.appColor.neutralLightLightest,
             disabledContainerColor = AppTheme.appColor.neutralLightLight,
             errorContainerColor = AppTheme.appColor.supportErrorLight,
-
             cursorColor = AppTheme.appColor.highlightDarkest,
             errorCursorColor = AppTheme.appColor.supportErrorMedium,
-
             selectionColors = TextSelectionColors(
                 handleColor = AppTheme.appColor.highlightMedium,
                 backgroundColor = AppTheme.appColor.highlightLight
             ),
-
             focusedIndicatorColor = AppTheme.appColor.highlightDark,
             unfocusedIndicatorColor = AppTheme.appColor.neutralLightDark,
             disabledIndicatorColor = AppTheme.appColor.neutralLightMedium,
             errorIndicatorColor = AppTheme.appColor.supportErrorDark,
-
             focusedLeadingIconColor = AppTheme.appColor.supportSuccessDark,
             unfocusedLeadingIconColor = AppTheme.appColor.neutralDarkMedium,
             disabledLeadingIconColor = AppTheme.appColor.neutralDarkLight,
             errorLeadingIconColor = AppTheme.appColor.supportErrorMedium,
-
             focusedTrailingIconColor = AppTheme.appColor.supportSuccessMedium,
             unfocusedTrailingIconColor = AppTheme.appColor.neutralDarkMedium,
             disabledTrailingIconColor = AppTheme.appColor.neutralDarkLight,
             errorTrailingIconColor = AppTheme.appColor.supportErrorMedium,
-
             focusedPlaceholderColor = AppTheme.appColor.neutralDarkLight,
             unfocusedPlaceholderColor = AppTheme.appColor.neutralDarkMedium,
             disabledPlaceholderColor = AppTheme.appColor.neutralDarkLightest,
-
             focusedSupportingTextColor = AppTheme.appColor.supportSuccessDark,
             unfocusedSupportingTextColor = AppTheme.appColor.neutralDarkMedium,
             disabledSupportingTextColor = AppTheme.appColor.neutralDarkLight,
@@ -251,6 +272,7 @@ fun PasswordField(viewModel: LoginViewModel) {
         )
     )
 }
+
 
 @Composable
 fun LoginButton(onClick: () -> Unit, isEnabled: Boolean) {

@@ -8,9 +8,10 @@ class ProductUnitRepository @Inject constructor() {
     val list = listOf(
         ProductUnitType(1, "dona"),
         ProductUnitType(2, "kg"),
-        ProductUnitType(3, "tonna"),
-        ProductUnitType(4, "litr"),
-        ProductUnitType(5, "metr")
+        ProductUnitType(3, "litr"),
+        ProductUnitType(4, "metr"),
+        ProductUnitType(5, "metr2"),
+        ProductUnitType(6, "metr3")
     )
 
     suspend fun getProductUnits(): Result<List<ProductUnitType>> {

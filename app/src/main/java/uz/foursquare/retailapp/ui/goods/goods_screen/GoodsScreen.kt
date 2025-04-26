@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -79,6 +80,7 @@ import uz.foursquare.retailapp.ui.theme.AppTheme
 import uz.foursquare.retailapp.ui.theme.Nunito
 import uz.foursquare.retailapp.ui.theme.RetailAppTheme
 import uz.foursquare.retailapp.utils.convertToPriceFormat
+import uz.foursquare.retailapp.utils.ui_components.CustomProductItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,13 +94,15 @@ fun GoodsScreen(
     LaunchedEffect(Unit) {
         viewModel.errorMessage.collect { message ->
             if (message.isNotBlank()) {
-                Log.e("GoodsScreen", "Error message: $message")
                 snackbarHostState.showSnackbar(message)
+
+                viewModel.clearError()
             }
         }
     }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(state = rememberTopAppBarState())
+    val scrollBehavior =
+        TopAppBarDefaults.enterAlwaysScrollBehavior(state = rememberTopAppBarState())
 
     Scaffold(
         topBar = { GoodsToolbar(title = "Goods", scrollBehavior = scrollBehavior) },
@@ -119,7 +123,9 @@ fun GoodsScreen(
             // SnackbarHost to show error messages
             SnackbarHost(hostState = snackbarHostState) { snackbarData ->
                 Snackbar(
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
                     containerColor = AppTheme.appColor.supportWarningMedium,
                     contentColor = Color.White
                 ) {
@@ -128,7 +134,9 @@ fun GoodsScreen(
                             imageVector = Icons.Default.Clear,
                             contentDescription = "Error",
                             tint = Color.White,
-                            modifier = Modifier.size(20.dp).padding(end = 8.dp)
+                            modifier = Modifier
+                                .size(20.dp)
+                                .padding(end = 8.dp)
                         )
                         Text(text = snackbarData.visuals.message)
                     }
@@ -159,55 +167,14 @@ fun GoodsCard(viewModel: GoodsViewModel) {
             }
         } else {
             LazyColumn(contentPadding = PaddingValues(vertical = 8.dp)) {
-                items(goods) { good ->
-                    GoodItem(good)
+                itemsIndexed(goods) { index, good ->
+                    CustomProductItem(good, index = index) {
+                        println(it)
+                    }
                 }
             }
         }
     }
-}
-
-@Composable
-fun GoodItem(goodItem: GoodType) {
-    Row {
-        AsyncImage(
-            model = "https://picsum.photos/200",
-            contentDescription = "Good image",
-            placeholder = painterResource(id = R.drawable.image_placeholder),
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(100.dp)
-                .padding(16.dp)
-                .clip(RoundedCornerShape(16.dp))
-        )
-
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = goodItem.name,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = AppTheme.typography.headlineH3,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-
-            Text(
-                text = goodItem.salePrice.convertToPriceFormat(),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = AppTheme.typography.headlineH4,
-                color = AppTheme.color.primary,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-
-            Text(
-                text = "${goodItem.count} ${goodItem.uniteType} / ${goodItem.barcode}",
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                style = AppTheme.typography.bodyM
-            )
-        }
-    }
-    HorizontalDivider()
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -224,7 +191,11 @@ fun SearchBar() {
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(imageVector = Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF2F3036))
+        Icon(
+            imageVector = Icons.Default.Search,
+            contentDescription = "Search",
+            tint = Color(0xFF2F3036)
+        )
         Spacer(modifier = Modifier.width(8.dp))
 
         BasicTextField(
@@ -267,7 +238,13 @@ fun SearchBar() {
 
 @Composable
 fun ChipsGroup() {
-    val chips = listOf("Barchasi (2 300)", "Aktiv (1 100)", "Noaktiv (30)", "Kam qolgan (250)", "Qolmagan (100)")
+    val chips = listOf(
+        "Barchasi (2 300)",
+        "Aktiv (1 100)",
+        "Noaktiv (30)",
+        "Kam qolgan (250)",
+        "Qolmagan (100)"
+    )
     var selectedChip by remember { mutableStateOf(chips.first()) }
     val scrollState = rememberScrollState()
 
@@ -290,10 +267,16 @@ fun ChipsGroup() {
                 label = { Text(text = chip) },
                 leadingIcon = {
                     if (selectedChip == chip) {
-                        Icon(imageVector = Icons.Filled.Done, contentDescription = "Done", tint = Color.White)
+                        Icon(
+                            imageVector = Icons.Filled.Done,
+                            contentDescription = "Done",
+                            tint = Color.White
+                        )
                     }
                 },
-                modifier = Modifier.padding(end = 4.dp).clip(RoundedCornerShape(12.dp))
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
             )
         }
     }
@@ -310,7 +293,9 @@ fun GoodsToolbar(title: String, scrollBehavior: TopAppBarScrollBehavior) {
             Icon(
                 imageVector = Icons.Default.AccountCircle,
                 contentDescription = null,
-                modifier = Modifier.padding(end = 8.dp).size(30.dp)
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .size(30.dp)
             )
         }
     )

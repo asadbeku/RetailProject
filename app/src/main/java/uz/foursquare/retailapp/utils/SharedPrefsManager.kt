@@ -10,15 +10,43 @@ class SharedPrefsManager @Inject constructor(
     private val sharedPreferences: SharedPreferences
 ) {
 
-    fun saveToken(token: String) {
-        sharedPreferences.edit() { putString("token", token) }
+    companion object {
+        private const val ACCESS_TOKEN_KEY = "access_token"
+        private const val REFRESH_TOKEN_KEY = "refresh_token"
     }
 
-    fun getToken(): String? {
-        return sharedPreferences.getString("token", null)
+    // Сохранение Access Token
+    fun saveAccessToken(token: String) {
+        sharedPreferences.edit().putString(ACCESS_TOKEN_KEY, token).apply()
     }
 
-    fun clearToken() {
-        sharedPreferences.edit { remove("token") }
+    // Сохранение Refresh Token
+    fun saveRefreshToken(token: String) {
+        sharedPreferences.edit().putString(REFRESH_TOKEN_KEY, token).apply()
+    }
+
+    // Получение Access Token
+    fun getAccessToken(): String? {
+        return sharedPreferences.getString(ACCESS_TOKEN_KEY, null)
+    }
+
+    // Получение Refresh Token
+    fun getRefreshToken(): String? {
+        return sharedPreferences.getString(REFRESH_TOKEN_KEY, null)
+    }
+
+    // Очистка Access Token
+    fun clearAccessToken() {
+        sharedPreferences.edit().remove(ACCESS_TOKEN_KEY).apply()
+    }
+
+    // Очистка Refresh Token
+    fun clearRefreshToken() {
+        sharedPreferences.edit().remove(REFRESH_TOKEN_KEY).apply()
+    }
+
+    // Очистка всех токенов
+    fun clearAllTokens() {
+        sharedPreferences.edit().remove(ACCESS_TOKEN_KEY).remove(REFRESH_TOKEN_KEY).apply()
     }
 }

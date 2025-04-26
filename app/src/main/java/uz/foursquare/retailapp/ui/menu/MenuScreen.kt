@@ -132,7 +132,9 @@ fun GoodsCard() {
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Button(
-                    onClick = {}, modifier = Modifier
+                    onClick = {
+                        throw Exception("Test exception")
+                    }, modifier = Modifier
                         .weight(1f)
                         .padding(end = 4.dp),
                     shape = RoundedCornerShape(12.dp),

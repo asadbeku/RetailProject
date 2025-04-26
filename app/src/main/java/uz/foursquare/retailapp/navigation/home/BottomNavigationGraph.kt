@@ -35,6 +35,8 @@ fun BottomNavigationGraph(navController: NavHostController, modifier: Modifier) 
         }
 
         addProductNavGraph(navController)
+
+        salesNavGraph(navController)
     }
 
 }
