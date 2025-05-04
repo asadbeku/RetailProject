@@ -10,7 +10,6 @@ data class OrderDataType(
     val transactionNumber: String = "",
     val products: List<OrderProductDataType>,
     val totalPrice: Double,
-    val discountSum: Double,
     val description: String,
     val customer: CustomerType?
 ) : Parcelable

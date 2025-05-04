@@ -178,6 +178,7 @@ fun AddClientBottomSheetDialog(
 fun GeneralDiscountBottomSheet(
     sheetState: SheetState,
     currentPrice: Double,
+    currentDiscountSum: Double,
     onDismiss: (Double) -> Unit
 ) {
 
@@ -188,6 +189,10 @@ fun GeneralDiscountBottomSheet(
     val discountRates = listOf("15", "30", "50", "75")
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+
+    if (currentDiscountSum > 0){
+        discountPercent = currentDiscountSum.toString()
+    }
 
     val originalPrice = currentPrice
     val discountPercentValue = discountPercent.toDoubleOrNull()?.coerceAtMost(100.0) ?: 0.0

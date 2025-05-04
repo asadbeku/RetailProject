@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -59,9 +60,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,6 +87,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import co.yml.charts.common.extensions.isNotNull
 import coil.compose.AsyncImage
+import io.sentry.protocol.App
 import uz.foursquare.retailapp.R
 import uz.foursquare.retailapp.navigation.home.SalesScreen
 import uz.foursquare.retailapp.ui.sales.type.CartItem
@@ -91,6 +95,7 @@ import uz.foursquare.retailapp.ui.sales.view_model.SalesViewModel
 import uz.foursquare.retailapp.ui.theme.AppTheme
 import uz.foursquare.retailapp.ui.theme.RetailAppTheme
 import uz.foursquare.retailapp.utils.convertToPriceFormat
+import uz.foursquare.retailapp.utils.ui_components.CustomButton
 import uz.foursquare.retailapp.utils.ui_components.LoadingIndicator
 
 
@@ -128,7 +133,7 @@ fun SalesScreen(
         ) { innerPadding ->
             Column(modifier = Modifier.padding(innerPadding)) {
                 Column(modifier = Modifier.weight(1f)) {
-                    SalesCardScreen(navController, products)
+                    SearchCardScreen(navController)
                     ProductsScreen(products, isLoading, viewModel)
                 }
                 Column {
@@ -144,7 +149,6 @@ fun SalesScreen(
                             dismissActionContentColor = Color.Blue,
                         )
                     }
-
                     BottomContainer(navController, viewModel)
                 }
             }
@@ -153,7 +157,7 @@ fun SalesScreen(
 }
 
 @Composable
-fun SalesCardScreen(navigation: NavHostController, products: List<CartItem>) {
+fun SearchCardScreen(navigation: NavHostController) {
     Card(
         modifier = Modifier
             .padding(top = 8.dp, bottom = 4.dp)
@@ -320,82 +324,138 @@ fun ProductItem(
                 }, sheetState = sheetState, containerColor = AppTheme.appColor.neutralLightLight
             ) {
                 // Sheet content
-                SheetContent()
+                ProductQuantityAndDiscountSheetContent(
+                    product = goodItem,
+                    onConfirm = { quantity, discount ->
+                        // Apply quantity and discount
+                    },
+                    onDismiss = { /* close modal */ }
+                )
             }
         }
     }
 }
 
 @Composable
-fun SheetContent() {
+fun ProductQuantityAndDiscountSheetContent(
+    product: CartItem,
+    onConfirm: (quantity: Int, discount: Float) -> Unit,
+    onDismiss: () -> Unit
+) {
     val tabs = listOf("Tovar soni", "Chegirma")
     var tabIndex by remember { mutableStateOf(0) }
     val pagerState = rememberPagerState(initialPage = tabIndex) { tabs.size }
 
+    var productCount by rememberSaveable { mutableIntStateOf(product.quantity) }
+    var discountSum by rememberSaveable { mutableFloatStateOf(0f) }
+
     LaunchedEffect(tabIndex) {
         pagerState.animateScrollToPage(tabIndex)
     }
+
     LaunchedEffect(pagerState.currentPage, pagerState.isScrollInProgress) {
         if (!pagerState.isScrollInProgress) {
             tabIndex = pagerState.currentPage
         }
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "Tovar soni va chegirmasi",
-            modifier = Modifier.padding(start = 16.dp, end = 4.dp),
-            style = AppTheme.typography.headlineH2,
-            fontWeight = FontWeight.Bold
-        )
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SheetHeader(title = "Tovar soni va chegirmasi", onDismiss = onDismiss)
 
         TabRow(
             selectedTabIndex = tabIndex,
             containerColor = AppTheme.appColor.neutralLightLight,
             indicator = { tabPositions ->
                 TabRowDefaults.Indicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
+                    Modifier.tabIndicatorOffset(tabPositions[tabIndex]),
                     color = AppTheme.color.primary
                 )
-            }) {
+            }
+        ) {
             tabs.forEachIndexed { index, title ->
                 Tab(
-                    text = { Text(text = title) },
                     selected = tabIndex == index,
                     onClick = { tabIndex = index },
+                    text = { Text(title) },
                     icon = {
-                        if (index == 0) Icon(
-                            painter = painterResource(R.drawable.abacus_icon),
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp)
-                        ) else Icon(
-                            painter = painterResource(R.drawable.discount_icon),
+                        Icon(
+                            painter = painterResource(
+                                if (index == 0) R.drawable.abacus_icon
+                                else R.drawable.discount_icon
+                            ),
                             contentDescription = null,
                             modifier = Modifier.size(24.dp)
                         )
-                    },
-                    selectedContentColor = AppTheme.color.primary,
-                    unselectedContentColor = AppTheme.appColor.neutralDarkDark
-
+                    }
                 )
             }
         }
 
         HorizontalPager(
-            state = pagerState, modifier = Modifier
+            state = pagerState,
+            modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-        ) { index ->
-            when (index) {
-                0 -> ProductCountSheetScreen()
-                1 -> ProductDiscountSheetScreen()
-                else -> {}
+        ) { page ->
+            when (page) {
+                0 -> ProductCountSheetScreen(
+                    productName = product.product.name,
+                    productPrice = product.product.salePrice.convertToPriceFormat(),
+                    initialCount = 1,
+                    onCountChange = { updatedCount ->
+                        println(updatedCount)
+                    }
+                )
+
+                1 -> ProductDiscountSheetScreen(
+                    productName = product.product.name,
+                    productPrice = product.product.salePrice.convertToPriceFormat(),
+                    initialDiscount = "0",
+                    onDiscountChange = { updatedDiscount ->
+                        // Handle discount change here
+                        println(updatedDiscount)
+                    }
+                )
             }
+        }
+
+        CustomButton(
+            text = "Tasdiqlash",
+            onClick = {
+                onConfirm(productCount, discountSum)
+            },
+            isEnabled = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            containerColor = AppTheme.color.primary,
+            contentColor = AppTheme.appColor.neutralLightLight,
+            disabledContainerColor = AppTheme.appColor.neutralLightLight,
+            disabledContentColor = AppTheme.color.primary
+        )
+    }
+}
+
+@Composable
+fun SheetHeader(title: String, onDismiss: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = AppTheme.typography.headlineH2,
+            fontWeight = FontWeight.Bold
+        )
+        IconButton(onClick = onDismiss) {
+            Icon(Icons.Default.Close, contentDescription = "Yopish")
         }
     }
 }
+
 
 @Composable
 fun BottomContainer(navController: NavController, viewModel: SalesViewModel) {
@@ -518,8 +578,13 @@ fun SalesToolbar(
 }
 
 @Composable
-fun ProductCountSheetScreen() {
-    var productCount by remember { mutableStateOf(0) }
+fun ProductCountSheetScreen(
+    productName: String,
+    productPrice: String,
+    initialCount: Int = 0,
+    onCountChange: (Int) -> Unit
+) {
+    var productCount by remember { mutableStateOf(initialCount.toString()) }
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -528,122 +593,76 @@ fun ProductCountSheetScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Tovar nomi: ",
-                modifier = Modifier.padding(),
-                style = AppTheme.typography.headlineH3,
-                fontWeight = FontWeight.SemiBold
-            )
+        // Product Name Row
+        InfoRow(label = "Tovar nomi:", value = productName)
 
-            Text(
-                text = "Tovar nomi 2",
-                modifier = Modifier.weight(1f),
-                style = AppTheme.typography.headlineH3,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Ellipsis,
-                color = AppTheme.color.primary
-            )
-        }
+        // Product Price Row
+        InfoRow(label = "Tovar narxi:", value = productPrice)
 
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-        ) {
-            Text(
-                text = "Tovar narxi: ",
-                modifier = Modifier.padding(),
-                style = AppTheme.typography.headlineH3,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = "120 000 so'm",
-                modifier = Modifier.weight(1f),
-                style = AppTheme.typography.headlineH3,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Ellipsis,
-                color = AppTheme.color.primary
-            )
-        }
-
+        // Input card for quantity
         Card(
             colors = CardDefaults.cardColors(containerColor = AppTheme.appColor.neutralLightLight),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp)
+                .padding(top = 16.dp)
         ) {
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
             ) {
                 Text(
                     text = "Tovar sonini kiriting",
-                    style = AppTheme.typography.headlineH3,
-                    modifier = Modifier.wrapContentHeight()
+                    style = AppTheme.typography.headlineH3
                 )
 
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                Box(
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .weight(1f)
-                        .wrapContentWidth()
+                        .fillMaxWidth()
                         .border(
-                            2.dp, AppTheme.appColor.highlightDarkest, RoundedCornerShape(16.dp)
-                        )
-                        .clip(
+                            2.dp,
+                            AppTheme.appColor.highlightDarkest,
                             RoundedCornerShape(16.dp)
-                        ),
-                    contentAlignment = Alignment.Center,
+                        )
+                        .clip(RoundedCornerShape(16.dp))
+                        .padding(horizontal = 12.dp)
                 ) {
-                    Row {
+                    OutlinedTextField(
+                        value = productCount,
+                        onValueChange = {
+                            productCount = it.filter { char -> char.isDigit() }
+                            onCountChange(productCount.toIntOrNull() ?: 0)
+                        },
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(focusRequester),
+                        placeholder = {
+                            Text("0", textAlign = TextAlign.End)
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedBorderColor = Color.Transparent
+                        ),
+                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.End)
+                    )
 
-                        OutlinedTextField(
-                            value = "",
-                            onValueChange = {
-                                productCount = it.toIntOrNull() ?: 0
-                            },
-                            placeholder = {
-                                Text(
-                                    "0",
-                                    modifier = Modifier.fillMaxWidth(),
-                                    textAlign = TextAlign.End
-                                )
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .focusRequester(focusRequester),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                unfocusedContainerColor = AppTheme.appColor.neutralLightLight,
-                                focusedContainerColor = AppTheme.appColor.neutralLightLight,
-                                unfocusedBorderColor = AppTheme.appColor.neutralLightLight,
-                                focusedBorderColor = AppTheme.appColor.neutralLightLight
-                            ),
-                            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.End),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                        )
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                        Text(
-                            text = "dona",
-                            modifier = Modifier
-                                .align(Alignment.CenterVertically)
-                                .padding(end = 8.dp),
-                            style = AppTheme.typography.bodyM,
-                            fontWeight = FontWeight.SemiBold,
-                            color = AppTheme.appColor.neutralDarkLight
-                        )
-
-
-                    }
+                    Text(
+                        text = "dona",
+                        style = AppTheme.typography.bodyM,
+                        fontWeight = FontWeight.SemiBold,
+                        color = AppTheme.appColor.neutralDarkLight
+                    )
                 }
             }
-
-
         }
     }
 
@@ -654,9 +673,41 @@ fun ProductCountSheetScreen() {
 }
 
 @Composable
-fun ProductDiscountSheetScreen() {
-    var discount by remember { mutableStateOf("0") }
-    var discountRates: List<String> = listOf("15", "30", "50", "75")
+fun InfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = AppTheme.typography.headlineH3,
+            fontWeight = FontWeight.SemiBold
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = value,
+            style = AppTheme.typography.headlineH3,
+            fontWeight = FontWeight.Bold,
+            color = AppTheme.color.primary,
+            modifier = Modifier.weight(1f),
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+fun ProductDiscountSheetScreen(
+    productName: String = "Tovar nomi 2",
+    productPrice: String = "120 000 so'm",
+    initialDiscount: String = "0",
+    onDiscountChange: (String) -> Unit
+) {
+    var discount by remember { mutableStateOf(initialDiscount) }
+    val discountRates = listOf("15", "30", "50", "75")
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -665,60 +716,28 @@ fun ProductDiscountSheetScreen() {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Tovar nomi: ",
-                modifier = Modifier.padding(),
-                style = AppTheme.typography.headlineH3,
-                fontWeight = FontWeight.SemiBold
-            )
+        // Product Name Row
+        InfoRow(label = "Tovar nomi:", value = productName)
 
-            Text(
-                text = "Tovar nomi 2",
-                modifier = Modifier.weight(1f),
-                style = AppTheme.typography.headlineH3,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Ellipsis,
-                color = AppTheme.color.primary
-            )
-        }
+        // Product Price Row
+        InfoRow(label = "Tovar narxi:", value = productPrice)
 
+        // Discount Input Field
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
-        ) {
-            Text(
-                text = "Tovar narxi: ",
-                modifier = Modifier.padding(),
-                style = AppTheme.typography.headlineH3,
-                fontWeight = FontWeight.SemiBold
-            )
-
-            Text(
-                text = "120 000 so'm",
-                modifier = Modifier.weight(1f),
-                style = AppTheme.typography.headlineH3,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Ellipsis,
-                color = AppTheme.color.primary
-            )
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier.padding(top = 16.dp)
         ) {
             OutlinedTextField(
-                value = "",
-                onValueChange = {},
+                value = discount,
+                onValueChange = { newValue ->
+                    discount = newValue.filter { it.isDigit() }
+                    onDiscountChange(discount)
+                },
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester),
-                shape = RoundedCornerShape(16.dp), // Set corner radius to 16.dp
+                shape = RoundedCornerShape(16.dp),
                 colors = TextFieldDefaults.colors(
                     unfocusedContainerColor = AppTheme.appColor.neutralLightLight,
                     focusedContainerColor = AppTheme.appColor.neutralLightLight,
@@ -729,22 +748,36 @@ fun ProductDiscountSheetScreen() {
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 placeholder = {
-                    Text(
-                        "Chegirma summasini", overflow = TextOverflow.Ellipsis, maxLines = 1
-                    )
-                })
-            Spacer(modifier = Modifier.padding(end = 8.dp))
-            SingleChoiceSegmentedButton(modifier = Modifier.height(52.dp), onSelected = {})
+                    Text("Chegirma summasini", overflow = TextOverflow.Ellipsis, maxLines = 1)
+                }
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Discount segmented button
+            SingleChoiceSegmentedButton(
+                modifier = Modifier.height(52.dp),
+                onSelected = { selectedRate ->
+                    discount = selectedRate.toString()
+                    onDiscountChange(discount)
+                }
+            )
         }
 
-        DiscountButton(discountRates, modifier = Modifier.padding(top = 8.dp)) { }
+        // Discount Preset Buttons
+        DiscountButton(discountRates, modifier = Modifier.padding(top = 8.dp)) { selectedDiscount ->
+            discount = selectedDiscount.toString()
+            onDiscountChange(discount)
+        }
     }
 
+    // Focus and show keyboard
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
         keyboardController?.show()
     }
 }
+
 
 @Composable
 fun DiscountButton(

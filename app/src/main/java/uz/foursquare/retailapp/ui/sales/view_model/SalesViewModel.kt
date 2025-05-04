@@ -68,7 +68,6 @@ class SalesViewModel @Inject constructor(
                 transactionNumber = _transactionNumber.value?: "transactionNumber",
                 products = orderProducts,
                 totalPrice = totalPrice,
-                discountSum = 0.0,
                 description = "",
                 customer = null
             )

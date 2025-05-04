@@ -92,8 +92,8 @@ fun PaymentScreen(
             ?.observeForever { orderData ->
                 Log.d("TAG", orderData.toString())
                 viewModel.setOrderData(orderData)
-                viewModel.setOrderTotal(orderData.discountSum)
-                viewModel.updatePaymentAmount(PaymentMethod.CASH, orderData.discountSum.toFloat())
+                viewModel.setOrderTotal(orderData.totalPrice)
+                viewModel.updatePaymentAmount(PaymentMethod.CASH, orderData.totalPrice.toFloat())
                 savedStateHandle.remove<String>("product_transaction_data")
             }
     }

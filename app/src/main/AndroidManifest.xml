@@ -32,6 +32,34 @@
         <meta-data
             android:name="firebase_performance_logcat_enabled"
             android:value="true" />
+
+        <!-- Required: set your sentry.io project identifier (DSN) -->
+        <meta-data android:name="io.sentry.dsn" android:value="https://19c6fef8099c01943d65774653b4af1b@o4509230222475264.ingest.us.sentry.io/4509230225489920" />
+
+        <!-- Add data like request headers, user ip adress and device name, see https://docs.sentry.io/platforms/android/data-management/data-collected/ for more info -->
+        <meta-data android:name="io.sentry.send-default-pii" android:value="true" />
+
+        <!-- enable automatic breadcrumbs for user interactions (clicks, swipes, scrolls) -->
+        <meta-data android:name="io.sentry.traces.user-interaction.enable" android:value="true" />
+        <!-- enable screenshot for crashes -->
+        <meta-data android:name="io.sentry.attach-screenshot" android:value="true" />
+        <!-- enable view hierarchy for crashes -->
+        <meta-data android:name="io.sentry.attach-view-hierarchy" android:value="true" />
+
+        <!-- enable the performance API by setting a sample-rate, adjust in production env -->
+        <meta-data android:name="io.sentry.traces.sample-rate" android:value="1.0" />
+        <!-- Set sampling rate for profiling, adjust in production env - this is evaluated only once per session -->
+        <!-- note: there is a known issue in the Android Runtime that can be triggered by Profiling in certain circumstances -->
+        <!-- see https://docs.sentry.io/platforms/android/profiling/troubleshooting/ -->
+        <meta-data android:name="io.sentry.traces.profiling.session-sample-rate" android:value="1.0" />
+        <!-- Set profiling lifecycle, can be `manual` (controlled through `Sentry.startProfiler()` and `Sentry.stopProfiler()`) or `trace` (automatically starts and stop a profile whenever a sampled trace starts and finishes) -->
+        <meta-data android:name="io.sentry.traces.profiling.lifecycle" android:value="trace" />
+        <!-- Enable profiling on app start -->
+        <meta-data android:name="io.sentry.traces.profiling.start-on-app-start" android:value="true" />
+
+        <!-- record session replays for 100% of errors and 10% of sessions -->
+        <meta-data android:name="io.sentry.session-replay.on-error-sample-rate" android:value="1.0" />
+        <meta-data android:name="io.sentry.session-replay.session-sample-rate" android:value="0.1" />
     </application>
 
 </manifest>

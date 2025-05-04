@@ -20,6 +20,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
+import io.sentry.Sentry
 import kotlinx.coroutines.delay
 import uz.foursquare.retailapp.R
 import uz.foursquare.retailapp.navigation.Graph
@@ -34,6 +35,7 @@ fun SplashScreen(navController: NavHostController, viewModel: SplashViewModel = 
     val authState = viewModel.authState.collectAsState().value
 
     LaunchedEffect(authState) {
+        Sentry.captureException(RuntimeException("This app uses Sentry! :)"))
         when (authState) {
             is AuthState.Authorized -> {
                 navController.navigate(Graph.MAIN) {

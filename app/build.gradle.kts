@@ -8,6 +8,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose") version "2.0.0"
     id("com.google.firebase.crashlytics")
     id("com.google.firebase.firebase-perf")
+    id ("io.sentry.android.gradle") version "5.4.0"
 }
 
 android {

@@ -69,6 +69,7 @@ class PaymentViewModel @Inject constructor(
     }
 
     fun setOrderData(dataType: OrderDataType) {
+        Log.d("CheckLog", "order data: $dataType")
         _orderData.value = dataType
     }
 
@@ -118,7 +119,6 @@ class PaymentViewModel @Inject constructor(
         }
 
         val payments = paymentOptions.value.map { payment ->
-
             when (payment.method) {
                 PaymentMethod.CASH -> Payment(
                     amount = paymentAmounts.value.cash.toDouble(),
@@ -138,10 +138,10 @@ class PaymentViewModel @Inject constructor(
         }
 
         val order = SaleRequestType(
+            saleId = orderData.value?.transactionId.toString(),
             clientId = orderData.value?.customer?.id.toString(),
             orders = products ?: emptyList(),
             payments = payments,
-            saleId = orderData.value?.transactionId.toString()
         )
 
         viewModelScope.launch(exceptionHandler + Dispatchers.IO) {

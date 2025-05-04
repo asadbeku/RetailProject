@@ -160,7 +160,7 @@ fun ProductTransactionScreen(
             sheetState = discountSheetState,
             containerColor = AppTheme.appColor.neutralLightLight
         ) {
-            GeneralDiscountBottomSheet(discountSheetState, originalPrice) {
+            GeneralDiscountBottomSheet(discountSheetState, originalPrice, currentDiscountSum = discountedPrice) {
                 viewModel.setDiscountedPrice(it)
                 showDiscountSheet = false
             }

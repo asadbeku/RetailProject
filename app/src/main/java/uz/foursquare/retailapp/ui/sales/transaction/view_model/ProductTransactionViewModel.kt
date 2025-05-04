@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.jetbrains.annotations.TestOnly
 import uz.foursquare.retailapp.ui.sales.transaction.customer.type.CustomerType
 import uz.foursquare.retailapp.ui.sales.type.OrderDataType
 import javax.inject.Inject
@@ -90,7 +91,6 @@ class ProductTransactionViewModel @Inject constructor(
     fun getOrderData(): OrderDataType? {
         return _orderData.value?.copy(
             customer = selectedCustomer.value,
-            discountSum = discountedPrice.value,
             description = description.value
         )
     }
@@ -113,7 +113,11 @@ class ProductTransactionViewModel @Inject constructor(
                     _isLoading.value = false
                 }
         }
+
+
     }
+
+
 
 
 }
